@@ -2,6 +2,9 @@
 
 > **Projeto:** Clyvo Vet / Pet Guardian (Challenge Clyvo 2026 — 2º Semestre)  
 > **Disciplina:** Disruptive Architectures: IoT, IoB & Generative IA (FIAP — 2TDSPG)  
+> **Epic Principal:** `[EPIC] Sprint 3 - Disruptive Architectures: Aplicação Python com IA Generativa, RAG e Integração Frontend`  
+> **Start Date:** `2026-08-30`  
+> **Target Date:** `2026-09-05`  
 > **Referência Oficial:** Manual do Challenge 2026 — Páginas 17 a 19  
 > **Formato:** Scrum / Azure DevOps (Azure Boards)  
 > **Arquitetura da Solução:** Aplicação Backend em Python (FastAPI + SQLAlchemy/Oracle) + IA Generativa (LLM/RAG) + Página Dedicada de IA no Frontend (React Native/Web)  
@@ -134,7 +137,15 @@ graph TD
 
 ---
 
-### 🔹 [PBI-01] Definição do Problema de Negócio e Jornada Contínua de Cuidado do Pet com IA
+### 🤖 FEATURE 01: Modelagem do Problema, Engenharia de Prompts e Arquitetura de IA
+* **Work Item Type:** `Feature`
+* **Parent Epic:** `[EPIC-03] Sprint 3 - Disruptive Architectures: Aplicação Python com IA Generativa, RAG e Integração Frontend`
+* **Tags:** `DisruptiveArchitectures`
+* **Start Date:** `2026-08-30`
+* **Target Date:** `2026-08-31`
+* **Descrição:** Definição do problema de negócio na jornada contínua de cuidado do pet e escolha fundamentada da abordagem de IA Generativa, RAG e Guardrails.
+
+#### 🔹 [PBI-01] Definição do Problema de Negócio e Jornada Contínua de Cuidado do Pet com IA
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-01] Modelagem do Problema, Engenharia de Prompts e Arquitetura de IA`
 * **State:** `Approved`
@@ -186,7 +197,15 @@ graph TD
 
 ---
 
-### 🔹 [PBI-03] Implementação do Data Layer Python (SQLAlchemy) e Queries do Histórico do Pet
+### 🗄️ FEATURE 02: Camada de Persistência & Extração de Contexto do Pet no Banco de Dados
+* **Work Item Type:** `Feature`
+* **Parent Epic:** `[EPIC-03] Sprint 3 - Disruptive Architectures: Aplicação Python com IA Generativa, RAG e Integração Frontend`
+* **Tags:** `DisruptiveArchitectures`
+* **Start Date:** `2026-08-31`
+* **Target Date:** `2026-09-01`
+* **Descrição:** Camada de persistência relacional com SQLAlchemy e base de conhecimento vetorial RAG no ChromaDB para contextualização das respostas da IA.
+
+#### 🔹 [PBI-03] Implementação do Data Layer Python (SQLAlchemy) e Queries do Histórico do Pet
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-02] Camada de Persistência & Extração de Contexto do Pet no Banco de Dados`
 * **State:** `Approved`
@@ -218,7 +237,7 @@ graph TD
 
 ---
 
-### 🔹 [PBI-04] Implementação da Base de Conhecimento Vetorial RAG (ChromaDB)
+#### 🔹 [PBI-04] Implementação da Base de Conhecimento Vetorial RAG (ChromaDB)
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-02] Camada de Persistência & Extração de Contexto do Pet no Banco de Dados`
 * **State:** `Approved`
@@ -245,7 +264,15 @@ graph TD
 
 ---
 
-### 🔹 [PBI-05] Desenvolvimento da API REST FastAPI com Endpoints de Chat, Triagem e Treino
+### 🐍 FEATURE 03: Aplicação Backend Python (FastAPI) & Orquestração de IA
+* **Work Item Type:** `Feature`
+* **Parent Epic:** `[EPIC-03] Sprint 3 - Disruptive Architectures: Aplicação Python com IA Generativa, RAG e Integração Frontend`
+* **Tags:** `DisruptiveArchitectures`
+* **Start Date:** `2026-09-01`
+* **Target Date:** `2026-09-03`
+* **Descrição:** Construção da API REST em FastAPI com rotas de chat, planos de treino, triagem de sintomas e diagramação arquitetural do ecossistema.
+
+#### 🔹 [PBI-05] Desenvolvimento da API REST FastAPI com Endpoints de Chat, Triagem e Treino
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-03] Aplicação Backend Python (FastAPI) & Orquestração de IA`
 * **State:** `Approved`
@@ -277,7 +304,7 @@ graph TD
 
 ---
 
-### 🔹 [PBI-06] Elaboração do Diagrama Arquitetural de Fluxo de Dados e Integração Ponta a Ponta
+#### 🔹 [PBI-06] Elaboração do Diagrama Arquitetural de Fluxo de Dados e Integração Ponta a Ponta
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-03] Aplicação Backend Python (FastAPI) & Orquestração de IA`
 * **State:** `Approved`
@@ -307,7 +334,15 @@ graph TD
 
 ---
 
-### 🔹 [PBI-07] Desenvolvimento da Página Dedicada da IA no Frontend (Chat, Chips & Cards)
+### 📱 FEATURE 04: Integração Frontend: Página Dedicada da IA & Gamificação do Pet
+* **Work Item Type:** `Feature`
+* **Parent Epic:** `[EPIC-03] Sprint 3 - Disruptive Architectures: Aplicação Python com IA Generativa, RAG e Integração Frontend`
+* **Tags:** `DisruptiveArchitectures`
+* **Start Date:** `2026-09-03`
+* **Target Date:** `2026-09-04`
+* **Descrição:** Desenvolvimento da tela dedicada de IA no frontend com interface de chat, seleção do pet, gamificação com XP e botão de emergência 24h.
+
+#### 🔹 [PBI-07] Desenvolvimento da Página Dedicada da IA no Frontend (Chat, Chips & Cards)
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-04] Integração Frontend: Página Dedicada da IA & Gamificação do Pet`
 * **State:** `Approved`
@@ -339,7 +374,7 @@ graph TD
 
 ---
 
-### 🔹 [PBI-08] Módulo de Treinamento com Gamificação do Pet e Triagem de Emergência 24h
+#### 🔹 [PBI-08] Módulo de Treinamento com Gamificação do Pet e Triagem de Emergência 24h
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-04] Integração Frontend: Página Dedicada da IA & Gamificação do Pet`
 * **State:** `Approved`
@@ -368,7 +403,15 @@ graph TD
 
 ---
 
-### 🔹 [PBI-09] Estruturação do Repositório GitHub e README.md Completo com Instruções
+### 📑 FEATURE 05: Repositório Técnico, Documentação README e Vídeo Pitch Oficial
+* **Work Item Type:** `Feature`
+* **Parent Epic:** `[EPIC-03] Sprint 3 - Disruptive Architectures: Aplicação Python com IA Generativa, RAG e Integração Frontend`
+* **Tags:** `DisruptiveArchitectures`
+* **Start Date:** `2026-09-04`
+* **Target Date:** `2026-09-05`
+* **Descrição:** Estruturação do repositório no GitHub com README.md completo e gravação do vídeo pitch de 5 minutos demonstrando o funcionamento integrado.
+
+#### 🔹 [PBI-09] Estruturação do Repositório GitHub e README.md Completo com Instruções
 * **Work Item Type:** `Product Backlog Item`
 * **Parent Feature:** `[FEAT-05] Repositório Técnico, Documentação README e Vídeo Pitch Oficial`
 * **State:** `Approved`

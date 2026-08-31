@@ -80,7 +80,7 @@ O **Guardian AI** é um microserviço inteligente em Python que atua como copilo
                                      ▼
  ┌────────────────────────────────────────────────────────────────────────┐
  │                         RESPOSTA JSON ESTRUTURADA                      │
- │   { resposta, categoria, urgencia, alerta_clinica_24h, score_xp }      │
+ │   { resposta, categoria, urgencia, score_xp }                          │
  └───────────────────────────────────┬────────────────────────────────────┘
                                      │
                                      ▼
@@ -131,13 +131,11 @@ A documentação interativa Swagger está disponível em: `http://localhost:8000
   "resposta": "⚠️ ALERTA DE EMERGÊNCIA: Chocolate contém teobromina, substância altamente tóxica para cães como o Thor. Como ele é de porte pequeno, a concentração tóxica no organismo é atingida rapidamente. Leve-o imediatamente a um pronto-socorro veterinário 24h.",
   "categoria": "EMERGENCIA",
   "urgencia": "EMERGENCIA",
-  "alerta_clinica_24h": true,
   "acoes_recomendadas": [
     "Transportar o pet imediatamente a uma clínica veterinária 24h",
     "Não tentar induzir vômito em casa sem orientação médica",
     "Levar a embalagem do chocolate para estimar a quantidade ingerida"
   ],
-  "score_xp_sugerido": 0,
   "origem_resposta": "gemini_flash_gemini-3.5-flash-lite"
 }
 ```

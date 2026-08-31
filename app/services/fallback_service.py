@@ -91,13 +91,11 @@ class FallbackService:
             ),
             categoria=CategoryEnum.FORA_DE_ESCOPO,
             urgencia=UrgencyEnum.BAIXA,
-            alerta_clinica_24h=False,
             acoes_recomendadas=[
                 "Perguntar sobre nutrição e ração do pet",
                 "Consultar dicas de adestramento e comandos",
                 "Tirar dúvidas sobre vacinação e prevenção",
             ],
-            score_xp_sugerido=0,
             origem_resposta="fallback_rules"
         )
 
@@ -112,14 +110,12 @@ class FallbackService:
             ),
             categoria=CategoryEnum.EMERGENCIA,
             urgencia=UrgencyEnum.EMERGENCIA,
-            alerta_clinica_24h=True,
             acoes_recomendadas=[
                 "Transportar o pet imediatamente a uma clínica veterinária 24h",
                 "Levar a embalagem da substância ingerida para cálculo de dosagem tóxica",
                 "Manter vias aéreas desobstruídas e o animal calmo no trajeto",
                 "Não oferecer leite, azeite ou medicamentos caseiros"
             ],
-            score_xp_sugerido=0,
             origem_resposta="fallback_rules"
         )
 
@@ -134,13 +130,11 @@ class FallbackService:
             ),
             categoria=CategoryEnum.COMPORTAMENTO,
             urgencia=UrgencyEnum.BAIXA,
-            alerta_clinica_24h=False,
             acoes_recomendadas=[
                 f"Praticar o comando 'Senta' 5 vezes hoje com {pet.nome}",
                 "Oferecer brinquedo interativo ao sair de casa",
                 "Concluir uma lição na aba de Trilhas para somar +15 XP"
             ],
-            score_xp_sugerido=15,
             origem_resposta="fallback_rules"
         )
 
@@ -156,13 +150,11 @@ class FallbackService:
             ),
             categoria=CategoryEnum.NUTRICAO,
             urgencia=UrgencyEnum.BAIXA,
-            alerta_clinica_24h=False,
             acoes_recomendadas=[
                 "Pesar a quantidade diária de ração na balança dosadora",
                 "Oferecer cubos de cenoura como recompensa de baixo valor calórico",
                 "Trocar a água do bebedouro duas vezes ao dia"
             ],
-            score_xp_sugerido=10,
             origem_resposta="fallback_rules"
         )
 
@@ -177,13 +169,11 @@ class FallbackService:
             ),
             categoria=CategoryEnum.SAUDE,
             urgencia=UrgencyEnum.BAIXA,
-            alerta_clinica_24h=False,
             acoes_recomendadas=[
                 f"Conferir a carteirinha de vacinação de {pet.nome}",
                 "Aplicar preventivo de pulgas e carrapatos em dia",
                 "Agendar check-up preventivo semestral na Clyvo Care"
             ],
-            score_xp_sugerido=10,
             origem_resposta="fallback_rules"
         )
 
@@ -197,13 +187,11 @@ class FallbackService:
             ),
             categoria=CategoryEnum.GERAL,
             urgencia=UrgencyEnum.BAIXA,
-            alerta_clinica_24h=False,
             acoes_recomendadas=[
                 "Perguntar sobre cronograma de vacinas e vermifugação",
                 "Consultar plano de treino positivo para comandos",
                 "Verificar alimentos permitidos e proibidos"
             ],
-            score_xp_sugerido=5,
             origem_resposta="fallback_rules"
         )
 

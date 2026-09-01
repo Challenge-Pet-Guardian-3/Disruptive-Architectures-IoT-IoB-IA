@@ -46,9 +46,7 @@ class ChatResponse(BaseModel):
     resposta: str = Field(..., description="Resposta amigável e explicativa da IA")
     categoria: CategoryEnum = Field(CategoryEnum.GERAL, description="Classificação temática da dúvida")
     urgencia: UrgencyEnum = Field(UrgencyEnum.BAIXA, description="Nível de urgência da situação")
-    alerta_clinica_24h: bool = Field(False, description="Indica se deve sugerir atendimento veterinário de emergência 24h")
     acoes_recomendadas: List[str] = Field(default_factory=list, description="Lista de ações práticas sugeridas ao tutor")
-    score_xp_sugerido: int = Field(0, description="Pontos de experiência (XP) sugeridos para gamificação")
     origem_resposta: str = Field("gemini_rag", description="Origem do processamento ('gemini_rag' ou 'fallback_rules')")
 
 class PetInsight(BaseModel):

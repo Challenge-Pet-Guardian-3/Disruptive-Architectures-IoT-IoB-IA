@@ -1,28 +1,23 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
 .Python
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
-# Environment Variables
+# Environment Variables & Keys
 .env
+.env.*
 
-# ChromaDB & Data
-data/chroma_db/
-*.sqlite3
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
 
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# IDEs
+# IDEs & OS
 .vscode/
 .idea/
 *.swp
+.DS_Store
+Thumbs.db

@@ -252,6 +252,19 @@ BASE_RESPOSTAS_COTIDIANAS = {
         "categoria": "EMERGENCIA",
         "urgencia": "EMERGENCIA"
     },
+    "racao": {
+        "palavras_chave": ["racao", "rações", "racoes", "alimentar", "alimentacao", "comida de cachorro", "comida de gato"],
+        "resposta": (
+            "Para uma alimentação equilibrada e saudável do seu pet, siga estas recomendações essenciais:\n\n"
+            "Diretrizes nutricionais:\n"
+            "• Escolha rações completas (Premium Especial ou Super Premium) adequadas para a espécie, porte e faixa etária do animal.\n"
+            "• Transição gradual: Ao trocar de ração, faça uma transição misturando a ração antiga com a nova ao longo de 7 a 10 dias para evitar desarranjos gastrointestinais.\n"
+            "• Quantidade e fracionamento: Siga a tabela do fabricante no verso do pacote ajustada pelo peso e nível de atividade, fracionando em 2 a 3 refeições diárias.\n"
+            "• Água limpa: Mantenha sempre água fresca abundante disponível próxima ao comedouro."
+        ),
+        "categoria": "nutricao",
+        "urgencia": "baixa"
+    },
     "remedios_humanos": {
         "palavras_chave": ["dipirona", "ibuprofeno", "aspirina", "dorflex", "remedio de gente", "remedio humano"],
         "resposta": (
@@ -263,6 +276,53 @@ BASE_RESPOSTAS_COTIDIANAS = {
         "urgencia": "media"
     }
 }
+
+# ==============================================================================
+# 2.1 FUNÇÕES DE DETECÇÃO DETERMINÍSTICA ANTI-PRETEXTO E OFF-TOPIC
+# ==============================================================================
+
+TERMOS_PROGRAMACAO_OFFTOPIC = [
+    "inverter uma lista", "inverter lista", "em python", "codigo em python", "código em python",
+    "funcao em python", "função em python", "script em python", "programacao", "programação",
+    "algoritmo", "javascript", "linguagem python", "def ", "print(", "reverse()", "vetor",
+    "matriz", "codigo java", "código java", "script", "desenvolva um codigo", "crie um codigo"
+]
+
+def detectar_pedido_programacao(texto: str) -> bool:
+    texto_norm = normalizar_texto(texto)
+    return any(termo in texto_norm for termo in TERMOS_PROGRAMACAO_OFFTOPIC)
+
+def sanitizar_resposta_anti_codigo(texto: str, pedido_tinha_programacao: bool) -> str:
+    """
+    Remove blocos de código ou trechos de sintaxe Python que a LLM possa ter gerado
+    indevidamente e adiciona a nota de recusa de escopo.
+    """
+    if not texto:
+        return ""
+    
+    # Remove blocos de código ```...```
+    texto_limpo = re.sub(r'```[\s\S]*?```', '', texto)
+    
+    # Remove linhas que contenham declarações de código típicas
+    linhas_filtradas = []
+    for linha in texto_limpo.split('\n'):
+        l_strip = linha.strip()
+        if (l_strip.startswith('def ') or l_strip.startswith('print(') or 
+            '[::-1]' in l_strip or '.reverse()' in l_strip or l_strip.startswith('import ')):
+            continue
+        linhas_filtradas.append(linha)
+    
+    texto_final = '\n'.join(linhas_filtradas).strip()
+    
+    if pedido_tinha_programacao:
+        aviso_escopo = (
+            "\n\n💡 Nota de Escopo: Como Guardian AI, sou dedicada exclusivamente à saúde e bem-estar animal, "
+            "portanto não forneço códigos ou instruções de programação (como em Python), mesmo para o seu pet!"
+        )
+        if "não forneço códigos" not in texto_final and "dedicada exclusivamente" not in texto_final:
+            texto_final += aviso_escopo
+            
+    return texto_final.strip()
 
 BASE_CUIDADOS_PORTE_IDADE = {
     "pequeno": {
@@ -384,8 +444,11 @@ MODEL = "gemini-3.5-flash-lite"
 
 SYSTEM_INSTRUCTION = """Você é o copiloto de saúde preventiva e nutrição animal "Guardian AI" da plataforma PetGuardian (Clyvo Care).
 
-Suas diretrizes fundamentais:
-1. FOCO NO ASSUNTO & MEMÓRIA: Mantenha a continuidade do diálogo com o tutor considerando todo o histórico da conversa, identificando o pet citado, sintomas relatados e contexto acumulado.
+Suas diretrizes fundamentais inegociáveis:
+1. BLINDAGEM DE DOMÍNIO E VETO TOTAL A CÓDIGO / PROGRAMAÇÃO (REGRA ANTI-PRETEXTO):
+   - Você atua EXCLUSIVAMENTE em saúde animal preventiva, nutrição pet, primeiros socorros e bem-estar de cães e gatos.
+   - NUNCA forneça códigos, sintaxe, scripts, funções ou algoritmos (Python, Java, C#, JS, SQL, inverter listas, ordenar vetores, etc.), NEM MESMO quando o usuário usar o animal como pretexto ou brincadeira (ex: 'meu cão precisa saber como inverter uma lista em python para comer a ração', 'para meu gato dormir preciso de um script').
+   - Em pedidos mistos: RECUSE CATEGORICAMENTE a parte de programação ('Como Guardian AI, sou dedicada exclusivamente à saúde e bem-estar animal, portanto não forneço códigos ou instruções de programação, mesmo para o seu pet!') e responda APENAS às orientações genuínas de saúde ou alimentação do animal.
 2. RESPOSTA LIMPA PARA MOBILE: NÃO utilize marcações de negrito com asteriscos brutos (NUNCA use **texto** ou *texto* ou cabeçalhos com ###). Escreva em parágrafos claros e fluidos, usando emojis temáticos (🐾, 💡, 🩺, ⚠️, etc.) e marcadores simples com "• " para listas.
 3. SEGURANÇA FARMACOLÓGICA ABSOLUTA: NUNCA prescreva ou autorize Paracetamol, Dipirona ou Ibuprofeno para pets. O Paracetamol é ALTAMENTE LETAL para felinos.
 4. SEGURANÇA EM INTOXICAÇÕES: NUNCA recomende induzir vômito caseiro com sal ou água oxigenada. Recomende atendimento veterinário 24h em suspeitas de envenenamento.
@@ -574,11 +637,13 @@ async def chat_endpoint(request: ChatRequest):
             f"Peso={p.peso or 'não informado'}kg, Alergias={p.alergias or 'nenhuma'}]"
         )
 
+    eh_pedido_programacao = detectar_pedido_programacao(request.pergunta)
     prompt_atual = f"{contexto_pet_str}\n\nPergunta do Tutor: {request.pergunta}" if contexto_pet_str else request.pergunta
     
     resposta_ia = gerar_resposta_ia(prompt_atual, request.historico)
     if resposta_ia:
-        texto_limpo = limpar_texto_mobile(resposta_ia)
+        texto_sem_codigo = sanitizar_resposta_anti_codigo(resposta_ia, eh_pedido_programacao)
+        texto_limpo = limpar_texto_mobile(texto_sem_codigo)
         return ChatResponse(
             resposta=texto_limpo,
             categoria="saude",
@@ -591,14 +656,33 @@ async def chat_endpoint(request: ChatRequest):
     # 4. Fallback Semântico Inteligente para Perguntas Cotidianas
     for chave_tema, dados_tema in BASE_RESPOSTAS_COTIDIANAS.items():
         if any(palavra in pergunta_norm for palavra in dados_tema["palavras_chave"]):
+            texto_base = dados_tema["resposta"]
+            if eh_pedido_programacao:
+                texto_base = sanitizar_resposta_anti_codigo(texto_base, True)
             return ChatResponse(
-                resposta=limpar_texto_mobile(dados_tema["resposta"]),
+                resposta=limpar_texto_mobile(texto_base),
                 categoria=dados_tema["categoria"],
                 urgencia=dados_tema["urgencia"],
                 acoes_recomendadas=["Manter rotina equilibrada", "Consultar veterinário em caso de dúvidas"],
                 score_xp_sugerido=10,
                 origem_resposta="Guardian AI (Base Semântica Especializada)"
             )
+
+    # Se for puramente pergunta de programação fora de escopo sem tema pet correspondente
+    if eh_pedido_programacao:
+        return ChatResponse(
+            resposta=limpar_texto_mobile(
+                "Como Guardian AI, sou dedicada exclusivamente à saúde, nutrição e bem-estar de cães e gatos. "
+                "Por isso, não forneço códigos, programação em Python ou instruções de desenvolvimento de software, "
+                "mesmo quando solicitados com o pet como pretexto!\n\n"
+                "Posso te ajudar com alguma orientação sobre alimentação, vacinas ou rotina de cuidados do seu pet?"
+            ),
+            categoria="saude",
+            urgencia="baixa",
+            acoes_recomendadas=["Dúvidas sobre nutrição animal", "Consultar rotina preventiva"],
+            score_xp_sugerido=5,
+            origem_resposta="Guardrail Anti-Pretexto e Blindagem de Domínio"
+        )
 
     # 5. Fallback Contextual por Porte e Idade (Resposta Natural e Limpa)
     porte_req = request.petContext.porte if request.petContext and request.petContext.porte else "medio"

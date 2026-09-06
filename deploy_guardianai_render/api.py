@@ -238,6 +238,29 @@ BASE_RESPOSTAS_COTIDIANAS = {
         ),
         "categoria": "saude",
         "urgencia": "baixa"
+    },
+    "inducao_vomito": {
+        "palavras_chave": ["agua oxigenada", "sal", "fazer vomitar", "induzir vomito", "vomitar logo", "forcar vomito"],
+        "resposta": (
+            "⛔ NÃO INDUZA O VÔMITO DO SEU PET EM CASA COM ÁGUA OXIGENADA OU SAL!\n\n"
+            "Por que receitas caseiras de vômito são perigosas:\n"
+            "• Água oxigenada (peróxido de hidrogênio) causa gastrite hemorrágica severa, úlceras e risco de embolia gasosa fatal.\n"
+            "• Sal de cozinha em excesso provoca intoxicação por sódio (hipernatremia aguda), edema cerebral e convulsões.\n"
+            "• Risco de broncoaspiração: O animal pode aspirar o vômito para os pulmões, gerando pneumonia aspirativa gravíssima.\n\n"
+            "🚨 Conduta segura: Leve o pet imediatamente a uma clínica ou hospital veterinário 24h. Apenas a equipe médica possui eméticos seguros injetáveis e suporte intensivo."
+        ),
+        "categoria": "EMERGENCIA",
+        "urgencia": "EMERGENCIA"
+    },
+    "remedios_humanos": {
+        "palavras_chave": ["dipirona", "ibuprofeno", "aspirina", "dorflex", "remedio de gente", "remedio humano"],
+        "resposta": (
+            "⛔ NUNCA DÊ MEDICAMENTOS HUMANOS PARA CÃES OU GATOS POR CONTA PRÓPRIA!\n\n"
+            "Anti-inflamatórios e analgésicos humanos (como Ibuprofeno, Aspirina, Diclofenaco e Paracetamol) possuem metabolismo incompatível com o fígado e rins de pets, podendo causar úlceras gástricas perfuradas, hemorragias e insuficiência renal aguda.\n\n"
+            "👉 Qualquer medicação deve ser prescrita exclusivamente por um médico-veterinário com dosagem ajustada por peso e espécie."
+        ),
+        "categoria": "saude",
+        "urgencia": "media"
     }
 }
 
@@ -326,9 +349,15 @@ class PetContextPayload(BaseModel):
     ultimaVacina: Optional[str] = None
     ultimaConsulta: Optional[str] = None
 
+class MensagemHistorico(BaseModel):
+    sender: str = Field(..., description="Remetente: 'user' ou 'assistant'/'model'")
+    text: str = Field(..., description="Texto da mensagem")
+
 class ChatRequest(BaseModel):
     pergunta: str = Field(..., description="Pergunta ou relato do tutor")
     petContext: Optional[PetContextPayload] = None
+    historico: Optional[List[MensagemHistorico]] = Field(default=None, description="Histórico de mensagens anteriores")
+    sessionId: Optional[str] = None
 
 class ChatResponse(BaseModel):
     resposta: str
@@ -348,7 +377,7 @@ class InsightsResponse(BaseModel):
     insights: List[InsightItem]
 
 # ==============================================================================
-# 4. MOTOR DE INFERÊNCIA GEMINI (MODELO ÚNICO)
+# 4. MOTOR DE INFERÊNCIA GEMINI (MODELO ÚNICO COM MEMÓRIA MULTI-TURNOS)
 # ==============================================================================
 
 MODEL = "gemini-3.5-flash-lite"
@@ -356,24 +385,41 @@ MODEL = "gemini-3.5-flash-lite"
 SYSTEM_INSTRUCTION = """Você é o copiloto de saúde preventiva e nutrição animal "Guardian AI" da plataforma PetGuardian (Clyvo Care).
 
 Suas diretrizes fundamentais:
-1. FOCO NO ASSUNTO: Responda diretamente e de forma completa à pergunta do tutor sobre cães, gatos, alimentação, saúde e bem-estar.
+1. FOCO NO ASSUNTO & MEMÓRIA: Mantenha a continuidade do diálogo com o tutor considerando todo o histórico da conversa, identificando o pet citado, sintomas relatados e contexto acumulado.
 2. RESPOSTA LIMPA PARA MOBILE: NÃO utilize marcações de negrito com asteriscos brutos (NUNCA use **texto** ou *texto* ou cabeçalhos com ###). Escreva em parágrafos claros e fluidos, usando emojis temáticos (🐾, 💡, 🩺, ⚠️, etc.) e marcadores simples com "• " para listas.
 3. SEGURANÇA FARMACOLÓGICA ABSOLUTA: NUNCA prescreva ou autorize Paracetamol, Dipirona ou Ibuprofeno para pets. O Paracetamol é ALTAMENTE LETAL para felinos.
 4. SEGURANÇA EM INTOXICAÇÕES: NUNCA recomende induzir vômito caseiro com sal ou água oxigenada. Recomende atendimento veterinário 24h em suspeitas de envenenamento.
 5. TOM DE VOZ: Amigável, acolhedor, empático e com fundamentação veterinária preventiva de fácil entendimento."""
 
-def chamar_gemini_rest(api_key: str, prompt_completo: str) -> Optional[str]:
+def formatar_contents_gemini(prompt_atual: str, historico: Optional[List[MensagemHistorico]] = None) -> List[Dict[str, Any]]:
+    contents = []
+    if historico:
+        for msg in historico:
+            if not msg.text or not msg.text.strip():
+                continue
+            role = "user" if msg.sender.lower() in ["user", "tutor", "cliente"] else "model"
+            contents.append({
+                "role": role,
+                "parts": [{"text": msg.text.strip()}]
+            })
+    
+    contents.append({
+        "role": "user",
+        "parts": [{"text": prompt_atual.strip()}]
+    })
+    return contents
+
+def chamar_gemini_rest(api_key: str, prompt_atual: str, historico: Optional[List[MensagemHistorico]] = None) -> Optional[str]:
     """
-    Executa chamada direta via REST API para o modelo oficial único.
+    Executa chamada direta via REST API com histórico multi-turnos para o modelo oficial único.
     """
+    contents = formatar_contents_gemini(prompt_atual, historico)
+    
     payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": f"{SYSTEM_INSTRUCTION}\n\n{prompt_completo}"}
-                ]
-            }
-        ],
+        "contents": contents,
+        "systemInstruction": {
+            "parts": [{"text": SYSTEM_INSTRUCTION}]
+        },
         "generationConfig": {
             "temperature": 0.6,
             "maxOutputTokens": 800
@@ -399,18 +445,35 @@ def chamar_gemini_rest(api_key: str, prompt_completo: str) -> Optional[str]:
             
     return None
 
-def chamar_gemini_sdk(api_key: str, prompt_completo: str) -> Optional[str]:
+def chamar_gemini_sdk(api_key: str, prompt_atual: str, historico: Optional[List[MensagemHistorico]] = None) -> Optional[str]:
     """
-    Executa chamada via SDK oficial google-genai para o modelo único.
+    Executa chamada via SDK oficial google-genai com histórico multi-turnos.
     """
     try:
         from google import genai
         from google.genai import types
         client = genai.Client(api_key=api_key)
         
+        # Monta historico estruturado para o SDK se presente
+        contents_sdk = []
+        if historico:
+            for msg in historico:
+                if not msg.text or not msg.text.strip():
+                    continue
+                role = "user" if msg.sender.lower() in ["user", "tutor", "cliente"] else "model"
+                contents_sdk.append(types.Content(
+                    role=role,
+                    parts=[types.Part.from_text(text=msg.text.strip())]
+                ))
+        
+        contents_sdk.append(types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=prompt_atual.strip())]
+        ))
+        
         response = client.models.generate_content(
             model=MODEL,
-            contents=prompt_completo,
+            contents=contents_sdk,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.6,
@@ -423,18 +486,18 @@ def chamar_gemini_sdk(api_key: str, prompt_completo: str) -> Optional[str]:
         print(f"[Gemini SDK] Modelo {MODEL} falhou: {e}")
     return None
 
-def gerar_resposta_ia(prompt_completo: str) -> Optional[str]:
+def gerar_resposta_ia(prompt_atual: str, historico: Optional[List[MensagemHistorico]] = None) -> Optional[str]:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return None
         
     # Tenta SDK primeiro
-    texto = chamar_gemini_sdk(api_key, prompt_completo)
+    texto = chamar_gemini_sdk(api_key, prompt_atual, historico)
     if texto:
         return texto
         
     # Tenta REST direto como fallback resiliente
-    return chamar_gemini_rest(api_key, prompt_completo)
+    return chamar_gemini_rest(api_key, prompt_atual, historico)
 
 # ==============================================================================
 # 5. ROTAS DA API FASTAPI
@@ -454,8 +517,15 @@ def root():
 async def chat_endpoint(request: ChatRequest):
     pergunta_norm = normalizar_texto(request.pergunta)
     
+    # Consolida contexto das mensagens anteriores se disponivel
+    historico_texto = ""
+    if request.historico:
+        historico_texto = " ".join([normalizar_texto(m.text) for m in request.historico])
+    
+    contexto_geral_busca = f"{historico_texto} {pergunta_norm}".strip()
+    
     # 1. Guardrail de Segurança Farmacológica / Paracetamol em Gatos
-    if "paracetamol" in pergunta_norm and any(k in pergunta_norm for k in ["gato", "felino", "mingau", "gatinho"]):
+    if "paracetamol" in contexto_geral_busca and any(k in contexto_geral_busca for k in ["gato", "felino", "mingau", "gatinho"]):
         texto_limpo = limpar_texto_mobile(
             "⛔ ALERTA VITAL: NUNCA DÊ PARACETAMOL PARA UM GATO!\n\n"
             "O Paracetamol é ALTAMENTE LETAL PARA FELINOS mesmo em doses mínimas. Os gatos não possuem a enzima necessária para metabolizar o medicamento, causando destruição rápida das hemácias (asfixia interna) e necrose hepática fulminante em poucas horas.\n\n"
@@ -492,7 +562,7 @@ async def chat_endpoint(request: ChatRequest):
                 origem_resposta="Base de Toxicologia Determinística PetGuardian"
             )
 
-    # 3. Tentativa de Inferência via Gemini (com sanitização para mobile)
+    # 3. Tentativa de Inferência via Gemini com Memória Multi-turnos
     contexto_pet_str = ""
     nome_pet = "seu pet"
     if request.petContext and request.petContext.nome:
@@ -504,9 +574,9 @@ async def chat_endpoint(request: ChatRequest):
             f"Peso={p.peso or 'não informado'}kg, Alergias={p.alergias or 'nenhuma'}]"
         )
 
-    prompt_completo = f"{contexto_pet_str}\n\nPergunta do Tutor: {request.pergunta}"
+    prompt_atual = f"{contexto_pet_str}\n\nPergunta do Tutor: {request.pergunta}" if contexto_pet_str else request.pergunta
     
-    resposta_ia = gerar_resposta_ia(prompt_completo)
+    resposta_ia = gerar_resposta_ia(prompt_atual, request.historico)
     if resposta_ia:
         texto_limpo = limpar_texto_mobile(resposta_ia)
         return ChatResponse(
@@ -515,7 +585,7 @@ async def chat_endpoint(request: ChatRequest):
             urgencia="baixa",
             acoes_recomendadas=["Acompanhar o bem-estar", "Manter hidratação regular"],
             score_xp_sugerido=10,
-            origem_resposta="Guardian AI (Gemini 2.5 Flash)"
+            origem_resposta=f"Guardian AI ({MODEL})"
         )
 
     # 4. Fallback Semântico Inteligente para Perguntas Cotidianas

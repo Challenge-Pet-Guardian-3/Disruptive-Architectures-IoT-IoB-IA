@@ -42,14 +42,14 @@ Na seção **Environment Variables**, adicione:
 1. Clique no botão **Create Web Service**.
 2. O Render iniciará o build automaticamente e exibirá os logs em tempo real.
 3. Ao finalizar, o status mudará para **Live** e sua URL pública HTTPS será gerada:
-   `https://petguardian-ai.onrender.com`
+   `https://disruptive-architectures-iot-iob-ia.onrender.com`
 
 ---
 
 ## 🧪 Testando a API no Ar
 
 ### 1. Health Check
-Abra no navegador: `https://petguardian-ai.onrender.com/`
+Abra no navegador: `https://disruptive-architectures-iot-iob-ia.onrender.com/`
 Retorno esperado:
 ```json
 {
@@ -62,7 +62,7 @@ Retorno esperado:
 ```
 
 ### 2. Documentação Interativa Swagger UI
-Acesse: `https://petguardian-ai.onrender.com/docs`
+Acesse: `https://disruptive-architectures-iot-iob-ia.onrender.com/docs`
 
 ---
 
@@ -72,6 +72,6 @@ Basta colar a URL gerada no arquivo [`Mobile-Application-Development/src/config/
 ```typescript
 export const env = {
   apiUrl: `http://${host}:8091`,
-  aiUrl: 'https://petguardian-ai.onrender.com', // URL pública do Render
+  aiUrl: 'https://disruptive-architectures-iot-iob-ia.onrender.com', // URL pública do Render
 };
 ```

@@ -49,7 +49,7 @@ A **Guardian AI** é uma aplicação conversacional inteligente desenvolvida par
 | Tecnologia / Componente | Versão / Padrão | Justificativa Técnica |
 | :--- | :--- | :--- |
 | **SDK Google GenAI** | `google-genai>=2.3.0` | Biblioteca oficial da Google para consumo do Gemini via Interactions API (`client.interactions.create`). |
-| **LLM (Modelo)** | `gemini-2.5-flash` | Alta velocidade de inferência, aderência rígida ao System Prompt, suporte nativo a Function Calling e JSON Schema. |
+| **LLM (Modelo)** | `gemini-3.5-flash-lite` | Alta velocidade de inferência, aderência rígida ao System Prompt, suporte nativo a Function Calling e JSON Schema. |
 | **Validação Estruturada** | `pydantic>=2.0` | Definição do schema `ResumoTriagem` e extração de respostas previsíveis com `model_validate_json()`. |
 | **Chamada de Ferramentas** | Tool Calling / Function Calling | Permite que a IA execute regras determinísticas locais sem alucinar toxicidade ou condutas clínicas. |
 | **Armazenamento Seguro de Chaves** | Colab Secrets (`userdata`) | Garante que credenciais de API nunca sejam expostas publicamente no código versionado. |

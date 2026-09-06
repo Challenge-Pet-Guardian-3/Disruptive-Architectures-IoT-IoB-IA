@@ -348,8 +348,10 @@ class InsightsResponse(BaseModel):
     insights: List[InsightItem]
 
 # ==============================================================================
-# 4. MOTOR DE INFERÊNCIA GEMINI MULTI-ESTRATÉGIA
+# 4. MOTOR DE INFERÊNCIA GEMINI (MODELO ÚNICO)
 # ==============================================================================
+
+MODEL = "gemini-3.5-flash-lite"
 
 SYSTEM_INSTRUCTION = """Você é o copiloto de saúde preventiva e nutrição animal "Guardian AI" da plataforma PetGuardian (Clyvo Care).
 
@@ -362,10 +364,8 @@ Suas diretrizes fundamentais:
 
 def chamar_gemini_rest(api_key: str, prompt_completo: str) -> Optional[str]:
     """
-    Executa chamada direta via REST API com fallback entre versões do modelo Gemini.
+    Executa chamada direta via REST API para o modelo oficial único.
     """
-    modelos_prioritarios = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-    
     payload = {
         "contents": [
             {
@@ -382,28 +382,26 @@ def chamar_gemini_rest(api_key: str, prompt_completo: str) -> Optional[str]:
     
     headers = {"Content-Type": "application/json"}
     body_bytes = json.dumps(payload).encode("utf-8")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={api_key}"
     
-    for modelo in modelos_prioritarios:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
-        try:
-            req = urllib.request.Request(url, data=body_bytes, headers=headers, method="POST")
-            with urllib.request.urlopen(req, timeout=12) as response:
-                if response.status == 200:
-                    dados = json.loads(response.read().decode("utf-8"))
-                    candidates = dados.get("candidates", [])
-                    if candidates and "content" in candidates[0]:
-                        parts = candidates[0]["content"].get("parts", [])
-                        if parts and "text" in parts[0]:
-                            return parts[0]["text"]
-        except Exception as e:
-            print(f"[Gemini REST Fallback] Modelo {modelo} falhou: {e}")
-            continue
+    try:
+        req = urllib.request.Request(url, data=body_bytes, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as response:
+            if response.status == 200:
+                dados = json.loads(response.read().decode("utf-8"))
+                candidates = dados.get("candidates", [])
+                if candidates and "content" in candidates[0]:
+                    parts = candidates[0]["content"].get("parts", [])
+                    if parts and "text" in parts[0]:
+                        return parts[0]["text"]
+    except Exception as e:
+        print(f"[Gemini REST] Modelo {MODEL} falhou: {e}")
             
     return None
 
 def chamar_gemini_sdk(api_key: str, prompt_completo: str) -> Optional[str]:
     """
-    Executa chamada via SDK oficial google-genai.
+    Executa chamada via SDK oficial google-genai para o modelo único.
     """
     try:
         from google import genai
@@ -411,7 +409,7 @@ def chamar_gemini_sdk(api_key: str, prompt_completo: str) -> Optional[str]:
         client = genai.Client(api_key=api_key)
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=MODEL,
             contents=prompt_completo,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
@@ -422,7 +420,7 @@ def chamar_gemini_sdk(api_key: str, prompt_completo: str) -> Optional[str]:
         if response and response.text:
             return response.text
     except Exception as e:
-        print(f"[Gemini SDK Fallback] SDK falhou: {e}")
+        print(f"[Gemini SDK] Modelo {MODEL} falhou: {e}")
     return None
 
 def gerar_resposta_ia(prompt_completo: str) -> Optional[str]:
@@ -447,9 +445,9 @@ def root():
     return {
         "status": "online",
         "service": "PetGuardian AI Microservice",
-        "model": "gemini-2.5-flash / Semantic Knowledge Engine",
+        "model": f"{MODEL} / Semantic Knowledge Engine",
         "framework": "FastAPI + Clean Mobile Pipeline",
-        "version": "1.1.0"
+        "version": "1.2.0"
     }
 
 @app.post("/ai/chat", response_model=ChatResponse)

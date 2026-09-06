@@ -55,9 +55,9 @@ Retorno esperado:
 {
   "status": "online",
   "service": "PetGuardian AI Microservice",
-  "model": "gemini-2.5-flash",
-  "framework": "FastAPI + Google GenAI SDK",
-  "version": "1.0.0"
+  "model": "gemini-3.5-flash-lite / Semantic Knowledge Engine",
+  "framework": "FastAPI + Clean Mobile Pipeline",
+  "version": "1.2.0"
 }
 ```
 

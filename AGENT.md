@@ -3,7 +3,7 @@
 > **Projeto:** PetGuardian / Clyvo Care — Assistente Virtual de Triagem e Cuidado Preventivo Pet  
 > **Disciplina:** Disruptive Architectures: IoT, IoB & Generative IA (FIAP — 2TDSPG)  
 > **Professor:** Arnaldo Jr  
-> **Arquivo Executável Central:** [`challenge-petguardian.ipynb`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Disruptive-Architectures-IoT-IoB-IA/challenge-petguardian.ipynb)  
+> **Arquivo Executável Central:** [`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)  
 > **Status:** Concluído, validado e autônomo (100% funcional no Google Colab e Jupyter local)
 
 ---
@@ -31,7 +31,7 @@ Tutores de cães e gatos enfrentam frequentes incertezas clínicas no dia a dia:
 ### 2.2. A Decisão: Por que Jupyter Notebook Autônomo?
 Inicialmente, cogitou-se um microserviço complexo com FastAPI e banco vetorial ChromaDB externo. Contudo, alinhando-se aos critérios pedagógicos oficiais da disciplina (Labs 2, 2.5 e 3 do Prof. Arnaldo Jr):
 - A aplicação deve ser **direta, elegante, autocontida e facilmente reproduzível** pela banca avaliadora.
-- Todo o sistema foi consolidado no notebook [`challenge-petguardian.ipynb`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Disruptive-Architectures-IoT-IoB-IA/challenge-petguardian.ipynb).
+- Todo o sistema foi consolidado no notebook [`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb).
 - Não há necessidade de subir servidores locais, configurar Docker ou subir arquivos `.md` avulsos para o Colab: a base de dados clínicos roda de forma determinística em memória e a orquestração de IA consome a biblioteca oficial `google-genai`.
 
 ---
@@ -46,7 +46,7 @@ Inicialmente, cogitou-se um microserviço complexo com FastAPI e banco vetorial 
                                      │
                                      ▼
  ┌────────────────────────────────────────────────────────────────────────┐
- │            🤖 GOOGLE GENAI INTERACTIONS API (GEMINI 2.5 FLASH)         │
+ │            🤖 GOOGLE GENAI INTERACTIONS API (GEMINI 3.5 FLASH LITE)    │
  │                                                                        │
  │  1. Ingestão de Contexto Multi-turnos (previous_interaction_id)        │
  │  2. Avaliação de System Prompt & Guardrails de Segurança               │
@@ -210,7 +210,7 @@ O notebook já possui gravados os outputs detalhados de cada simulação:
 
 ## 🚀 9. Guia Rápido de Execução no Google Colab
 
-1. Abra o [Google Colab](https://colab.research.google.com/) e faça upload do arquivo [`challenge-petguardian.ipynb`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Disruptive-Architectures-IoT-IoB-IA/challenge-petguardian.ipynb).
+1. Abra o [Google Colab](https://colab.research.google.com/) e faça upload do arquivo [`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb).
 2. Na barra lateral esquerda do Colab, clique no ícone de chave (**Secrets / Segredos**).
 3. Adicione uma credencial com o nome `GEMINI_API_KEY` contendo sua chave do [Google AI Studio](https://aistudio.google.com/) e marque **"Acesso do notebook"**.
 4. Pressione `Ctrl + F9` (**Ambiente de Execução > Executar tudo**).

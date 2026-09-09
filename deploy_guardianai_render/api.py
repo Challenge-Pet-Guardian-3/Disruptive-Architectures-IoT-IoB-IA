@@ -17,14 +17,14 @@ load_dotenv()
 app = FastAPI(
     title="PetGuardian / Clyvo Care — AI Microservice",
     description="API de IA Generativa e Triagem Preventiva para pets com respostas limpas e guardrails de segurança.",
-    version="1.1.0"
+    version="1.2.0"
 )
 
 # Habilita CORS total para conexão com React Native Mobile e Web
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

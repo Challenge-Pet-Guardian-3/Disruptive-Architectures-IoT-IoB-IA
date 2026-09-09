@@ -6,9 +6,9 @@
 > **Epic Principal:** `[EPIC] Sprint 3 - Disruptive Architectures: Assistente Virtual de Triagem e Cuidado Preventivo Pet (Guardian AI) com Google GenAI e Validação Pydantic`  
 > **Start Date:** `2026-08-30`  
 > **Target Date:** `2026-09-05`  
-> **Arquivo Executável Central:** [`challenge-petguardian.ipynb`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Disruptive-Architectures-IoT-IoB-IA/challenge-petguardian.ipynb)  
+> **Arquivo Executável Central:** [`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)  
 > **Padrão:** Azure Boards (Scrum Process: Epic ➔ Feature ➔ PBI ➔ Task)  
-> **Diretrizes Estratégicas:** Aplicação autônoma em Jupyter Notebook executável no Google Colab, orquestração via SDK oficial `google-genai` (Gemini 2.5 Flash), Tool Calling determinístico, blindagem estrita de guardrails éticos/farmacológicos, extração estruturada Pydantic (`ResumoTriagem`) e integração com o ecossistema Mobile.
+> **Diretrizes Estratégicas:** Aplicação autônoma em Jupyter Notebook executável no Google Colab, orquestração via SDK oficial `google-genai` (Gemini 3.5 Flash Lite), Tool Calling determinístico, blindagem estrita de guardrails éticos/farmacológicos, extração estruturada Pydantic (`ResumoTriagem`) e integração com o ecossistema Mobile.
 
 ---
 
@@ -107,13 +107,13 @@
 ### 🏛️ ÉPICO
 * **Work Item Type:** `Epic`
 * **Title:** `[EPIC] Sprint 3 - Disruptive Architectures: Assistente Virtual de Triagem e Cuidado Preventivo Pet (Guardian AI) com Google GenAI e Validação Pydantic`
-* **Tags:** `Sprint3, DisruptiveArchitectures, GoogleGenAI, Gemini2.5Flash, ToolCalling, Pydantic, Guardrails, Colab, Jupyter`
+* **Tags:** `Sprint3, DisruptiveArchitectures, GoogleGenAI, Gemini3.5FlashLite, ToolCalling, Pydantic, Guardrails, Colab, Jupyter`
 * **Start Date:** `2026-08-30`
 * **Target Date:** `2026-09-05`
 * **Priority:** `1 - Critical`
 * **Effort (Story Points):** `13`
 * **Business Value:** `100`
-* **Description:** Desenvolvimento de uma aplicação autônoma de IA Generativa consolidada em Jupyter Notebook ([`challenge-petguardian.ipynb`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Disruptive-Architectures-IoT-IoB-IA/challenge-petguardian.ipynb)) para triagem clínica preventiva e orientação personalizada pet, utilizando a biblioteca oficial `google-genai` (Gemini 2.5 Flash), Tool Calling determinístico, guardrails anti-pretexto e farmacológicos, e extração tipada com Pydantic (`ResumoTriagem`).
+* **Description:** Desenvolvimento de uma aplicação autônoma de IA Generativa consolidada em Jupyter Notebook ([`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)) para triagem clínica preventiva e orientação personalizada pet, utilizando a biblioteca oficial `google-genai` (Gemini 3.5 Flash Lite), Tool Calling determinístico, guardrails anti-pretexto e farmacológicos, e extração tipada com Pydantic (`ResumoTriagem`).
 
 ---
 
@@ -253,7 +253,7 @@
 * **State:** `Approved`
 * **Priority:** `1 - Critical`
 * **Effort (Story Points):** `1`
-* **Tags:** `Sprint3, DisruptiveArchitectures, InteractionsAPI, Memory, Gemini2.5Flash`
+* **Tags:** `Sprint3, DisruptiveArchitectures, InteractionsAPI, Memory, Gemini3.5FlashLite`
 
 ##### Descrição (História de Usuário)
 > **Como** Desenvolvedor de IA,  

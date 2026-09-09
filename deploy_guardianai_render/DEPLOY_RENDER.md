@@ -67,7 +67,7 @@ Acesse: `https://disruptive-architectures-iot-iob-ia.onrender.com/docs`
 ---
 
 ## 📱 Vinculação com o Aplicativo Mobile
-Basta colar a URL gerada no arquivo [`Mobile-Application-Development/src/config/env.ts`](file:///c:/Users/Enzo/new_backup/FIAP/_Projetos/Challenge%20Clyvo%203/Mobile-Application-Development/src/config/env.ts):
+Basta colar a URL gerada no arquivo `env.ts` do repositório Mobile (`Mobile-Application-Development/src/config/env.ts`):
 
 ```typescript
 export const env = {

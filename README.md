@@ -306,15 +306,3 @@ O notebook já inclui gravadas todas as mensagens, saídas de console e JSONs va
    - **Acesso:** Ative a chave seletora de permissão do notebook.
 4. Clique em **Ambiente de Execução > Executar tudo** (`Ctrl + F9`).
 5. Ao final, utilize a **Seção 7** para conversar livremente com a **Guardian AI** em tempo real pelo terminal do notebook!
-
----
-
-## 🎬 9. Roteiro Sugerido para o Vídeo Pitch (5 Minutos)
-
-| Tempo | Bloco da Apresentação | Conteúdo & Demonstração |
-| :---: | :--- | :--- |
-| **0:00 - 1:00** | **Introdução & Problema de Negócio** | Apresentação dos integrantes da equipe (2TDSPG), a proposta da Pet Guardian e como a IA resolve a insegurança de tutores e a sobrecarga clínica. |
-| **1:00 - 2:00** | **Arquitetura & Autonomia Técnica** | Apresentação do notebook `challenge-petguardian.ipynb`, SDK `google-genai`, ferramentas determinísticas em Python e validação Pydantic. |
-| **2:00 - 3:15** | **Simulação 1 & 2: Emergência e Prevenção** | Demonstração da ingestão de chocolate (alerta contra água oxigenada) e dos cuidados geriátricos da Golden Luna com geração do `ResumoTriagem`. |
-| **3:15 - 4:15** | **Simulação 3: Guardrail & Anti-Pretexto** | Demonstração do bloqueio a pedidos de programação em Python (mesmo com pretexto do pet) e alerta vital contra Paracetamol para gatos. |
-| **4:15 - 5:00** | **Conclusão & Valor para a Saúde Animal** | Como o relatório estruturado empodera a consulta presencial e fideliza o tutor na clínica Pet Guardian. Encerramento. |

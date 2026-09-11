@@ -22,6 +22,8 @@
 
 * **Repositório GitHub:** [https://github.com/Challenge-Pet-Guardian-3/Disruptive-Architectures-IoT-IoB-IA](https://github.com/Challenge-Pet-Guardian-3/Disruptive-Architectures-IoT-IoB-IA)
 * **Notebook Principal:** [`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)
+* **Microsserviço em Produção (FastAPI / Render):** [`deploy_guardianai_render`](./deploy_guardianai_render)
+* **Guia de Implantação no Render:** [`DEPLOY_RENDER.md`](./deploy_guardianai_render/DEPLOY_RENDER.md)
 * **Vídeo Pitch Oficial no YouTube (Não Listado - 5 min):** [https://youtube.com/watch?v=SEU_VIDEO_AQUI](https://youtube.com/watch?v=SEU_VIDEO_AQUI)
 
 ---
@@ -76,7 +78,7 @@ Tutores de animais de estimação enfrentam constantes incertezas quanto à alim
 
 ### Escopo da Entrega: Notebook Autônomo & Microserviço Python
 - **Notebook Principal ([`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)):** Núcleo da entrega acadêmica, 100% autônomo e reproduzível no Google Colab. Executa a orquestração conversacional, chamadas determinísticas de ferramentas, guardrails anti-pretexto e extração de JSON validado por schema Pydantic, sem requerer servidores externos.
-- **Microserviço Python FastAPI ([`api.py`](./deploy_guardianai_render/api.py)):** Aplicação complementar em Python estruturada para produção (deploy no Render), expondo endpoints REST (`/ai/chat` e `/ai/insights`) que conectam essa inteligência ao aplicativo Mobile React Native dos tutores Pet Guardian.
+- **Microsserviço Python FastAPI Modular ([`deploy_guardianai_render`](./deploy_guardianai_render)):** Aplicação de produção estruturada em camadas (`src/core`, `schemas`, `knowledge`, `utils`, `services`, `routers`) e configurada para deploy contínuo no Render (`render.yaml`). Expõe endpoints RESTful (`/ai/chat` e `/ai/insights`) com tipagem estrita, janela deslizante anti-contaminação e sanitização automática para o app Mobile React Native.
 
 ---
 
@@ -245,6 +247,9 @@ O diagrama a seguir ilustra a integração completa entre a interface do usuári
 3. **Triagem de Emergência (Nível Vermelho):**
    - Alerta imediato contra o uso de água oxigenada ou sal para induzir vômito caseiro (risco severo de perfuração gástrica e pneumonia aspirativa).
    - Encaminhamento com urgência para clínicas veterinárias 24 horas.
+4. **Transição Fluida de Assunto & Janela Deslizante Anti-Contaminação:**
+   - **Isolamento de Guardrails no Turno Atual:** A verificação de substâncias letais e alimentos proibidos avalia estritamente a pergunta do turno atual (`pergunta_norm`).
+   - **Prevenção de Loop de Emergência:** Adoção de janela deslizante (últimos 6 turnos) e diretriz explícita no System Prompt para que, caso o tutor mude de assunto (ex: pergunte sobre passeios ou ração após um incidente prévio já atendido), a IA responda diretamente à nova solicitação sem ficar presa em alertas repetitivos de turnos anteriores.
 
 ---
 
@@ -428,4 +433,33 @@ O microsserviço foi homologado e configurado para deploy contínuo no **Render*
 - **Comando de Build:** `pip install -r requirements.txt`
 - **Comando de Start:** `uvicorn api:app --host 0.0.0.0 --port $PORT`
 - **Garantia de Resolução de Módulos:** O `api.py` injeta dinamicamente o diretório raiz no `sys.path` (`api.py:L12-14`), assegurando que o pacote `src.*` seja resolvido com precisão absoluta pelo Uvicorn em qualquer diretório de execução em nuvem.
+
+---
+
+### Como Executar o Microsserviço Localmente
+
+Para rodar o microsserviço FastAPI em sua máquina local para testes ou integração com o aplicativo móvel:
+
+1. Acesse a pasta do microsserviço:
+   ```bash
+   cd deploy_guardianai_render
+   ```
+2. Instale as dependências:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Crie um arquivo `.env` (ou copie de `.env.example`) e configure sua credencial:
+   ```env
+   GEMINI_API_KEY=sua_chave_do_google_ai_studio
+   PORT=8000
+   ```
+4. Inicie o servidor com recarregamento automático:
+   ```bash
+   uvicorn api:app --reload --port 8000
+   ```
+5. Acesse a documentação interativa OpenAPI / Swagger UI diretamente no navegador:
+   - **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
+   - **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+   - **Health Check:** [http://localhost:8000/](http://localhost:8000/)
+
 

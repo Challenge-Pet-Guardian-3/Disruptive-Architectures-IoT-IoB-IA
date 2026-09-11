@@ -184,9 +184,10 @@ O diagrama a seguir ilustra a integração completa entre a interface do usuári
                            │                                                    ▼
                            │                           ┌──────────────────────────────────────────────────┐
                            │                           │ BACKEND FASTAPI EM NUVEM (DEPLOY NO RENDER)      │
-                           │                           │    deploy_guardianai_render/api.py               │
-                           │                           │    • Microserviço Python 100% Stateless          │
-                           │                           │    • Sanitização de texto para React Native      │
+                           │                           │    deploy_guardianai_render/api.py (App Factory) │
+                           │                           │    • Arquitetura Modular em Camadas (src/)       │
+                           │                           │    • 100% Stateless & Zero I/O de Banco          │
+                           │                           │    • Janela Deslizante (Anti-Contaminação)       │
                            │                           │    • CORS Middleware & Pre-warm Ping (GET /)     │
                            │                           └────────────────────────┬─────────────────────────┘
                            │                                                    │
@@ -229,7 +230,7 @@ O diagrama a seguir ilustra a integração completa entre a interface do usuári
 ```
 
 > **Nota de Arquitetura (Stateless & Desacoplamento de Dados):**  
-> O microserviço Python (`api.py`) e o notebook autônomo operam sob o padrão **100% Stateless**, sem qualquer dependência ou conexão direta com banco de dados. Toda a persistência e consumo de dados de perfil do pet são gerenciados pelo ecossistema Pet Guardian (Mobile e APIs Core), que enviam apenas o payload contextual (`PetContext`) via JSON para a IA realizar o raciocínio clínico e devolver a resposta sanitizada com o schema Pydantic.
+> O microsserviço Python em produção ([`deploy_guardianai_render`](./deploy_guardianai_render)) e o notebook autônomo operam sob o padrão **100% Stateless**, sem nenhuma dependência ou conexão direta com banco de dados em tempo de execução. As bases de toxicologia e triagem clínica residem em memória (`src/knowledge/`), permitindo tempo de resposta em microssegundos com zero risco de corrupção ou perda de estado em discos efêmeros de nuvem (Render Free). Toda a persistência de perfil do pet pertence ao aplicativo Mobile e ao banco relacional corporativo (Oracle Database), que enviam apenas o payload contextual (`PetContext`) via JSON para a IA realizar o raciocínio clínico e devolver a resposta sanitizada com o schema Pydantic.
 
 ---
 
@@ -306,3 +307,125 @@ O notebook já inclui gravadas todas as mensagens, saídas de console e JSONs va
    - **Acesso:** Ative a chave seletora de permissão do notebook.
 4. Clique em **Ambiente de Execução > Executar tudo** (`Ctrl + F9`).
 5. Ao final, utilize a **Seção 7** para conversar livremente com a **Guardian AI** em tempo real pelo terminal do notebook!
+
+---
+
+## 🏛️ 9. Microsserviço em Produção: Arquitetura em Camadas, SOLID & Clean Code
+
+O microsserviço de produção em nuvem localizado em [`deploy_guardianai_render`](./deploy_guardianai_render) foi construído sob uma **arquitetura em camadas estritamente tipada**, seguindo as melhores práticas de **Clean Code**, **SOLID** e **DRY (Don't Repeat Yourself)**, garantindo desacoplamento de responsabilidades, alta testabilidade e integração nativa com o aplicativo Mobile React Native.
+
+### Estrutura de Diretórios Modular
+
+```text
+deploy_guardianai_render/
+├── api.py                    # Application Factory & Bootstrap (~50 linhas)
+├── render.yaml               # Infraestrutura como Código no Render (uvicorn api:app)
+├── requirements.txt          # Dependências mínimas de produção
+├── DEPLOY_RENDER.md          # Guia passo a passo de implantação em nuvem
+└── src/
+    ├── core/                 # Configurações globais, variáveis de ambiente e System Prompts
+    │   ├── config.py         # Metadados do app, porta ($PORT), CORS e modelo oficial
+    │   └── prompts.py        # System Instruction com os 6 guardrails clínicos
+    ├── schemas/              # DTOs tipados com Pydantic (Validação semântica e tipagem estrita)
+    │   ├── pet.py            # PetContextPayload (espécie, raça, porte, idade, comorbidades)
+    │   ├── chat.py           # MensagemHistorico, ChatRequest, ChatResponse
+    │   └── insights.py       # InsightItem, InsightsResponse (tríade preventiva)
+    ├── knowledge/            # Bases de conhecimento clínico em memória (Zero I/O de disco)
+    │   ├── toxicology.py     # Dicionário de alimentos proibidos e conduta imediata
+    │   ├── preventive_care.py# Matriz de riscos articulares/nutricionais por porte e idade
+    │   └── faq.py            # Base semântica de dúvidas cotidianas e manejo
+    ├── utils/                # Utilitários de higienização, segurança e formatação
+    │   ├── text.py           # Sanitização de Markdown para exibição fluida no React Native
+    │   └── guardrails.py     # Detectores de evasão de escopo e bloqueio anti-código
+    ├── services/             # Regras de negócio desacopladas (SRP & Inversão de Dependência)
+    │   ├── knowledge_service.py # Consultas determinísticas e semânticas em memória
+    │   ├── gemini_service.py    # Cliente Gemini (SDK oficial + fallback REST + janela deslizante)
+    │   ├── insights_service.py  # Gerador dos 3 pilares de prevenção clínica
+    │   └── chat_service.py      # Orquestrador do pipeline de triagem de 6 estágios
+    └── routers/              # Roteadores HTTP FastAPI (APIRouter)
+        ├── health.py         # Endpoint GET / (Health check & pre-warm ping)
+        └── ai.py             # Endpoints POST /ai/chat e POST /ai/insights
+```
+
+---
+
+### Princípios SOLID & Clean Code Aplicados
+
+| Princípio | Aplicação Prática no Projeto |
+| :--- | :--- |
+| **S — Single Responsibility (SRP)** | Cada classe e módulo possui um único propósito bem delimitado: `api.py` apenas monta a aplicação (`create_app`), `ChatService` apenas coordena a triagem, `GeminiService` apenas lida com inferência generativa e `KnowledgeService` isola as buscas em memória. |
+| **O — Open/Closed (OCP)** | As bases de conhecimento em `src/knowledge/` podem receber novos alimentos tóxicos ou faixas etárias sem necessidade de modificar a lógica dos serviços de inferência ou os contratos dos roteadores. |
+| **L — Liskov Substitution (LSP)** | Os contratos de resposta (`ChatResponse`, `InsightsResponse`) mantêm consistência garantida de tipagem Pydantic em qualquer caminho de execução (seja via LLM, fallback semântico ou guardrail determinístico). |
+| **I — Interface Segregation (ISP)** | DTOs enxutos e focados: `PetContextPayload` contém apenas o contexto biológico do animal, desacoplado do contrato de histórico de mensagens (`MensagemHistorico`). |
+| **D — Dependency Inversion (DIP)** | Os roteadores em `src/routers/` dependem de abstrações de serviço estáticas/injetáveis (`ChatService`, `InsightsService`), e não de implementações acopladas a frameworks externos. |
+| **DRY (Don't Repeat Yourself)** | Funções utilitárias como `normalizar_texto` e `limpar_texto_mobile` centralizadas em `src/utils/`, eliminando redundâncias de sanitização. |
+| **Zero Inline FQCN & Strict Typing** | Todas as importações são declaradas no topo de cada módulo (`top-level imports`), com tipagem estrita via `typing` e Pydantic (zero uso de `any`). |
+
+---
+
+### Catálogo de Endpoints RESTful da API
+
+| Método | Rota | Descrição Técnica | Entrada / Payload | Retorno / Schema |
+| :---: | :--- | :--- | :--- | :--- |
+| `GET` | `/` | **Health Check & Pre-warm Ping:** Retorna status operacional, versão da engine e framework ativo. Utilizado para aquecer a instância no Render antes do início da sessão no app. | N/A | `{"status": "online", "service": "...", "version": "2.0.0"}` |
+| `POST` | `/ai/chat` | **Chat de Triagem & Orientação:** Processa dúvidas do tutor com histórico multi-turnos, janela deslizante (6 turnos), guardrails de segurança e fallbacks clínicos. | `ChatRequest` (pergunta, histórico, petContext) | `ChatResponse` (resposta sanitizada, categoria, urgência, ações recomendadas, XP sugerido) |
+| `POST` | `/ai/insights` | **Geração de Insights Preventivos:** Analisa porte e idade do animal gerando a tríade de saúde preventiva (cuidados articulares, nutrição e protocolo veterinário). | `PetContextPayload` (porte, idade, espécie) | `InsightsResponse` (lista de 3 `InsightItem` com título, categoria e descrição) |
+
+---
+
+### Pipeline de 6 Estágios de Triagem no `ChatService`
+
+```text
+    [Pergunta do Tutor + petContext + Histórico]
+                         │
+                         ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │ 1. GUARDRAIL FARMACOLÓGICO EMERGENCIAL (Pergunta Atual)      │
+  │    Paracetamol em felinos detectado?                        │
+  └──────────────┬──────────────────────────────┬───────────────┘
+                 │ SIM                          │ NÃO
+                 ▼                              ▼
+      [Retorno Imediato:         ┌──────────────────────────────────────────────┐
+       Alerta Vermelho Letal]    │ 2. GUARDRAIL TOXICOLÓGICO DETERMINÍSTICO     │
+                                 │    Alimento tóxico detectado na pergunta?    │
+                                 └──────┬───────────────────────┬───────────────┘
+                                        │ SIM                   │ NÃO
+                                        ▼                       ▼
+                             [Retorno Imediato:   ┌─────────────────────────────┐
+                              Toxina & Conduta]   │ 3. INFERÊNCIA GEMINI        │
+                                                  │    • Janela de 6 turnos     │
+                                                  │    • SDK Oficial / REST     │
+                                                  └──────┬──────────────┬───────┘
+                                                         │ Sucesso      │ Falha
+                                                         ▼              ▼
+                                              [Sanitização Mobile ┌─────────────┐
+                                               & Resposta LLM]    │ 4. FALLBACK │
+                                                                  │    SEMÂNTICO│
+                                                                  │    (FAQ)    │
+                                                                  └──────┬──────┘
+                                                                         │ Sem match
+                                                                         ▼
+                                                                  ┌─────────────┐
+                                                                  │ 5. DEFESA   │
+                                                                  │    ANTI-    │
+                                                                  │    CÓDIGO   │
+                                                                  └──────┬──────┘
+                                                                         │ Fora escopo
+                                                                         ▼
+                                                                  ┌─────────────┐
+                                                                  │ 6. FALLBACK │
+                                                                  │    PORTE /  │
+                                                                  │    IDADE    │
+                                                                  └─────────────┘
+```
+
+---
+
+### Compatibilidade e Deploy Contínuo no Render
+
+O microsserviço foi homologado e configurado para deploy contínuo no **Render** através do arquivo declarativo [`render.yaml`](./deploy_guardianai_render/render.yaml):
+- **Runtime:** Python 3.11+ / 3.12+ / 3.14+
+- **Comando de Build:** `pip install -r requirements.txt`
+- **Comando de Start:** `uvicorn api:app --host 0.0.0.0 --port $PORT`
+- **Garantia de Resolução de Módulos:** O `api.py` injeta dinamicamente o diretório raiz no `sys.path` (`api.py:L12-14`), assegurando que o pacote `src.*` seja resolvido com precisão absoluta pelo Uvicorn em qualquer diretório de execução em nuvem.
+

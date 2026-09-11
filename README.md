@@ -247,9 +247,10 @@ O diagrama a seguir ilustra a integração completa entre a interface do usuári
 3. **Triagem de Emergência (Nível Vermelho):**
    - Alerta imediato contra o uso de água oxigenada ou sal para induzir vômito caseiro (risco severo de perfuração gástrica e pneumonia aspirativa).
    - Encaminhamento com urgência para clínicas veterinárias 24 horas.
-4. **Transição Fluida de Assunto & Janela Deslizante Anti-Contaminação:**
-   - **Isolamento de Guardrails no Turno Atual:** A verificação de substâncias letais e alimentos proibidos avalia estritamente a pergunta do turno atual (`pergunta_norm`).
-   - **Prevenção de Loop de Emergência:** Adoção de janela deslizante (últimos 6 turnos) e diretriz explícita no System Prompt para que, caso o tutor mude de assunto (ex: pergunte sobre passeios ou ração após um incidente prévio já atendido), a IA responda diretamente à nova solicitação sem ficar presa em alertas repetitivos de turnos anteriores.
+4. **Transição Fluida de Assunto & Janela Deslizante Anti-Contaminação (Exclusivo do Microsserviço Python):**
+   - **Isolamento de Guardrails no Turno Atual:** Na aplicação Python de produção ([`deploy_guardianai_render`](./deploy_guardianai_render)), a verificação de substâncias letais e alimentos proibidos avalia estritamente a pergunta do turno atual (`pergunta_norm`).
+   - **Prevenção de Loop de Emergência no Mobile:** Adoção de janela deslizante (últimos 6 turnos) no `ChatService` / `GeminiService` para que, caso o tutor mude de assunto no chat do app (ex: pergunte sobre brinquedos ou ração após um incidente prévio de chocolate já solucionado), a IA responda diretamente à nova solicitação sem ficar presa em alertas repetitivos de turnos passados.
+   - *Diferença em relação ao Colab:* O notebook acadêmico ([`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)) gerencia sessões curtas e controladas de 2 turnos por simulação via `previous_interaction_id`, sendo a janela deslizante uma evolução de engenharia aplicada especificamente ao backend contínuo de produção.
 
 ---
 

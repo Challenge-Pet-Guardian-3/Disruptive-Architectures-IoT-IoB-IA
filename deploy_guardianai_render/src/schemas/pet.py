@@ -1,7 +1,7 @@
 """
 Schemas Pydantic: Contexto do Animal de Estimação
 """
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field
 
 class PetContextPayload(BaseModel):
@@ -13,7 +13,7 @@ class PetContextPayload(BaseModel):
     idade: Optional[int] = Field(default=None, description="Idade em anos do pet")
     sexo: Optional[str] = Field(default=None, description="Sexo do pet: 'macho' ou 'femea'")
     castrado: Optional[bool] = Field(default=None, description="Indicador de castração")
-    peso: Optional[str] = Field(default=None, description="Peso do pet em kg")
+    peso: Optional[Union[str, float, int]] = Field(default=None, description="Peso do pet em kg")
     alergias: Optional[str] = Field(default=None, description="Histórico de alergias conhecidas")
     medicamentos: Optional[str] = Field(default=None, description="Medicamentos de uso contínuo")
     ultimaVacina: Optional[str] = Field(default=None, description="Data da última vacinação administrada")

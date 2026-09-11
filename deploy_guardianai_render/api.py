@@ -452,12 +452,16 @@ Suas diretrizes fundamentais inegociáveis:
 2. RESPOSTA LIMPA PARA MOBILE: NÃO utilize marcações de negrito com asteriscos brutos (NUNCA use **texto** ou *texto* ou cabeçalhos com ###). Escreva em parágrafos claros e fluidos, usando emojis temáticos (🐾, 💡, 🩺, ⚠️, etc.) e marcadores simples com "• " para listas.
 3. SEGURANÇA FARMACOLÓGICA ABSOLUTA: NUNCA prescreva ou autorize Paracetamol, Dipirona ou Ibuprofeno para pets. O Paracetamol é ALTAMENTE LETAL para felinos.
 4. SEGURANÇA EM INTOXICAÇÕES: NUNCA recomende induzir vômito caseiro com sal ou água oxigenada. Recomende atendimento veterinário 24h em suspeitas de envenenamento.
-5. TOM DE VOZ: Amigável, acolhedor, empático e com fundamentação veterinária preventiva de fácil entendimento."""
+5. TOM DE VOZ: Amigável, acolhedor, empático e com fundamentação veterinária preventiva de fácil entendimento.
+6. TRANSIÇÃO DE ASSUNTO E FLUIDEZ CONVERSACIONAL:
+   - Se o tutor mudar de assunto, fizer uma nova pergunta sobre outro tema (como ração, vacinas, comportamento ou banho) ou indicar que uma situação anterior já foi atendida/superada, RESPONDA DIRETAMENTE à nova solicitação sem insistir repetitivamente em alertas de emergência anteriores. Mantenha sempre o foco na dúvida mais recente trazida pelo tutor."""
 
 def formatar_contents_gemini(prompt_atual: str, historico: Optional[List[MensagemHistorico]] = None) -> List[Dict[str, Any]]:
     contents = []
     if historico:
-        for msg in historico:
+        # Janela deslizante: limita aos últimos 6 turnos para evitar contaminação contextual prolongada
+        historico_recente = historico[-6:]
+        for msg in historico_recente:
             if not msg.text or not msg.text.strip():
                 continue
             role = "user" if msg.sender.lower() in ["user", "tutor", "cliente"] else "model"
@@ -510,17 +514,18 @@ def chamar_gemini_rest(api_key: str, prompt_atual: str, historico: Optional[List
 
 def chamar_gemini_sdk(api_key: str, prompt_atual: str, historico: Optional[List[MensagemHistorico]] = None) -> Optional[str]:
     """
-    Executa chamada via SDK oficial google-genai com histórico multi-turnos.
+    Executa chamada via SDK oficial google-genai com histórico multi-turnos e janela deslizante.
     """
     try:
         from google import genai
         from google.genai import types
         client = genai.Client(api_key=api_key)
         
-        # Monta historico estruturado para o SDK se presente
+        # Monta historico estruturado para o SDK (janela deslizante de até 6 mensagens)
         contents_sdk = []
         if historico:
-            for msg in historico:
+            historico_recente = historico[-6:]
+            for msg in historico_recente:
                 if not msg.text or not msg.text.strip():
                     continue
                 role = "user" if msg.sender.lower() in ["user", "tutor", "cliente"] else "model"
@@ -580,15 +585,8 @@ def root():
 async def chat_endpoint(request: ChatRequest):
     pergunta_norm = normalizar_texto(request.pergunta)
     
-    # Consolida contexto das mensagens anteriores se disponivel
-    historico_texto = ""
-    if request.historico:
-        historico_texto = " ".join([normalizar_texto(m.text) for m in request.historico])
-    
-    contexto_geral_busca = f"{historico_texto} {pergunta_norm}".strip()
-    
-    # 1. Guardrail de Segurança Farmacológica / Paracetamol em Gatos
-    if "paracetamol" in contexto_geral_busca and any(k in contexto_geral_busca for k in ["gato", "felino", "mingau", "gatinho"]):
+    # 1. Guardrail de Segurança Farmacológica / Paracetamol em Gatos (focado na pergunta atual)
+    if "paracetamol" in pergunta_norm and any(k in pergunta_norm for k in ["gato", "felino", "mingau", "gatinho"]):
         texto_limpo = limpar_texto_mobile(
             "⛔ ALERTA VITAL: NUNCA DÊ PARACETAMOL PARA UM GATO!\n\n"
             "O Paracetamol é ALTAMENTE LETAL PARA FELINOS mesmo em doses mínimas. Os gatos não possuem a enzima necessária para metabolizar o medicamento, causando destruição rápida das hemácias (asfixia interna) e necrose hepática fulminante em poucas horas.\n\n"

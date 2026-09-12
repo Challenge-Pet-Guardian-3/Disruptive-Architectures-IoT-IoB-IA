@@ -24,7 +24,7 @@
 * **Notebook Principal:** [`challenge-petguardian.ipynb`](./challenge-petguardian.ipynb)
 * **Microsserviço em Produção (FastAPI / Render):** [`deploy_guardianai_render`](./deploy_guardianai_render)
 * **Guia de Implantação no Render:** [`DEPLOY_RENDER.md`](./deploy_guardianai_render/DEPLOY_RENDER.md)
-* **Vídeo Pitch Oficial no YouTube (Não Listado - 5 min):** [https://youtube.com/watch?v=SEU_VIDEO_AQUI](https://youtube.com/watch?v=SEU_VIDEO_AQUI)
+* **Vídeo Pitch Oficial no YouTube:** [https://youtu.be/S12sFMPmmwo](https://youtu.be/S12sFMPmmwo)
 
 ---
 

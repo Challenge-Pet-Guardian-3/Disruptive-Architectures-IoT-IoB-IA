@@ -50,7 +50,6 @@ def init_db() -> None:
                 categoria TEXT NOT NULL,
                 urgencia TEXT NOT NULL,
                 origem_resposta TEXT NOT NULL,
-                score_xp_sugerido INTEGER DEFAULT 0,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         """)

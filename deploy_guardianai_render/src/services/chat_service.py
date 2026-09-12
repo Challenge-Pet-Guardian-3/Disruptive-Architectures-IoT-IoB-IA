@@ -58,8 +58,7 @@ class ChatService:
             urgencia=response.urgencia,
             origem_resposta=response.origem_resposta,
             pet_id=pet_id,
-            nome_pet=nome_pet,
-            score_xp_sugerido=response.score_xp_sugerido or 0
+            nome_pet=nome_pet
         )
 
         return response
@@ -85,7 +84,6 @@ class ChatService:
                 categoria="EMERGENCIA",
                 urgencia="EMERGENCIA",
                 acoes_recomendadas=["Não medicar em casa", "Procurar clínica veterinária urgente"],
-                score_xp_sugerido=0,
                 origem_resposta="Guardrail de Segurança Farmacológica PetGuardian"
             )
             return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
@@ -107,7 +105,6 @@ class ChatService:
                 categoria="EMERGENCIA" if urgencia_val == "EMERGENCIA" else "SAUDE",
                 urgencia=urgencia_val,
                 acoes_recomendadas=["Levar ao hospital 24h", "Não induzir vômito caseiro"],
-                score_xp_sugerido=15,
                 origem_resposta="Base de Toxicologia Determinística PetGuardian"
             )
             return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
@@ -134,7 +131,6 @@ class ChatService:
                 categoria="saude",
                 urgencia="baixa",
                 acoes_recomendadas=["Acompanhar o bem-estar", "Manter hidratação regular"],
-                score_xp_sugerido=10,
                 origem_resposta=f"Guardian AI ({MODEL_NAME})"
             )
             return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
@@ -150,7 +146,6 @@ class ChatService:
                 categoria=dados_tema["categoria"],
                 urgencia=dados_tema["urgencia"],
                 acoes_recomendadas=["Manter rotina equilibrada", "Consultar veterinário em caso de dúvidas"],
-                score_xp_sugerido=10,
                 origem_resposta="Guardian AI (Base Semântica Especializada)"
             )
             return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
@@ -167,7 +162,6 @@ class ChatService:
                 categoria="saude",
                 urgencia="baixa",
                 acoes_recomendadas=["Dúvidas sobre nutrição animal", "Consultar rotina preventiva"],
-                score_xp_sugerido=5,
                 origem_resposta="Guardrail Anti-Pretexto e Blindagem de Domínio"
             )
             return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
@@ -192,7 +186,6 @@ class ChatService:
             categoria="saude",
             urgencia="baixa",
             acoes_recomendadas=["Check-up periódico", "Rotina de bem-estar ativa"],
-            score_xp_sugerido=10,
             origem_resposta="Guardian AI (Mecanismo Preventivo)"
         )
         return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)

@@ -20,7 +20,6 @@ class ChatResponse(BaseModel):
     categoria: str = Field(default="saude", description="Categoria clínica: 'saude', 'nutricao', 'rotina', 'EMERGENCIA'")
     urgencia: str = Field(default="baixa", description="Classificação de gravidade: 'baixa', 'media', 'alta', 'EMERGENCIA'")
     acoes_recomendadas: Optional[List[str]] = Field(default=None, description="Orientações e checklist de ações sugeridas para o tutor")
-    score_xp_sugerido: Optional[int] = Field(default=10, description="Pontos de experiência (gamificação PetGuardian)")
     origem_resposta: str = Field(default="Guardian AI (PetGuardian Care)", description="Identificador do mecanismo responsável pela geração da resposta")
     sessionId: Optional[str] = Field(default=None, description="Identificador da sessão ativa no banco de dados")
 
@@ -42,7 +41,6 @@ class AuditoriaBancoItem(BaseModel):
     categoria: str = Field(..., description="Categoria clínica")
     urgencia: str = Field(..., description="Nível de urgência")
     origem_resposta: str = Field(..., description="Origem da resposta")
-    score_xp_sugerido: int = Field(default=0, description="Score XP")
     timestamp: Optional[str] = Field(default=None, description="Data/hora do registro")
 
 class HistoricoResponse(BaseModel):

@@ -45,8 +45,7 @@ class ChatRepository:
         urgencia: str,
         origem_resposta: str,
         pet_id: Optional[int] = None,
-        nome_pet: Optional[str] = None,
-        score_xp_sugerido: int = 0
+        nome_pet: Optional[str] = None
     ) -> bool:
         """
         Registra o parecer e metadados da triagem clínica na tabela de auditoria.
@@ -57,12 +56,12 @@ class ChatRepository:
                 cursor.execute("""
                     INSERT INTO auditoria_triagens (
                         session_id, pet_id, nome_pet, pergunta, resposta,
-                        categoria, urgencia, origem_resposta, score_xp_sugerido
+                        categoria, urgencia, origem_resposta
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     session_id, pet_id, nome_pet, pergunta, resposta,
-                    categoria, urgencia, origem_resposta, score_xp_sugerido
+                    categoria, urgencia, origem_resposta
                 ))
                 conn.commit()
                 return True
@@ -134,7 +133,7 @@ class ChatRepository:
                 if pet_id:
                     cursor.execute("""
                         SELECT id, session_id, pet_id, nome_pet, pergunta, resposta,
-                               categoria, urgencia, origem_resposta, score_xp_sugerido, timestamp
+                               categoria, urgencia, origem_resposta, timestamp
                         FROM auditoria_triagens
                         WHERE pet_id = ?
                         ORDER BY id DESC
@@ -143,7 +142,7 @@ class ChatRepository:
                 else:
                     cursor.execute("""
                         SELECT id, session_id, pet_id, nome_pet, pergunta, resposta,
-                               categoria, urgencia, origem_resposta, score_xp_sugerido, timestamp
+                               categoria, urgencia, origem_resposta, timestamp
                         FROM auditoria_triagens
                         ORDER BY id DESC
                         LIMIT ?

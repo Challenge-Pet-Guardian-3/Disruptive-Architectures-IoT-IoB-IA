@@ -2,12 +2,24 @@
 Serviço de Inferência: Cliente Google Gemini (SDK Oficial com Fallback REST)
 """
 import json
+import logging
 import urllib.request
 import urllib.error
 from typing import Optional, List, Dict, Any
 from src.core.config import MODEL_NAME, GEMINI_API_KEY
 from src.core.prompts import SYSTEM_INSTRUCTION
 from src.schemas.chat import MensagemHistorico
+
+logger = logging.getLogger("GuardianAI.GeminiService")
+
+try:
+    from google import genai
+    from google.genai import types
+    HAS_GENAI_SDK = True
+except ImportError:
+    genai = None
+    types = None
+    HAS_GENAI_SDK = False
 
 class GeminiService:
     """
@@ -76,7 +88,7 @@ class GeminiService:
                         if parts and "text" in parts[0]:
                             return parts[0]["text"]
         except Exception as e:
-            print(f"[Gemini REST] Falha na chamada ({MODEL_NAME}): {e}")
+            logger.warning(f"[Gemini REST] Falha na chamada ({MODEL_NAME}): {e}")
         return None
 
     @classmethod
@@ -86,9 +98,10 @@ class GeminiService:
         prompt_atual: str,
         historico: Optional[List[MensagemHistorico]] = None
     ) -> Optional[str]:
+        if not HAS_GENAI_SDK or genai is None or types is None:
+            return None
+
         try:
-            from google import genai
-            from google.genai import types
             client = genai.Client(api_key=api_key)
 
             contents_sdk = []
@@ -120,7 +133,7 @@ class GeminiService:
             if response and response.text:
                 return response.text
         except Exception as e:
-            print(f"[Gemini SDK] Falha na chamada ({MODEL_NAME}): {e}")
+            logger.warning(f"[Gemini SDK] Falha na chamada ({MODEL_NAME}): {e}")
         return None
 
     @classmethod

@@ -81,38 +81,28 @@ class ChatRepository:
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
-                if session_id and pet_id:
-                    cursor.execute("""
-                        SELECT id, session_id, pet_id, sender, text, timestamp
-                        FROM mensagens_chat
-                        WHERE session_id = ? AND pet_id = ?
-                        ORDER BY id ASC
-                        LIMIT ?
-                    """, (session_id, pet_id, limit))
-                elif session_id:
-                    cursor.execute("""
-                        SELECT id, session_id, pet_id, sender, text, timestamp
-                        FROM mensagens_chat
-                        WHERE session_id = ?
-                        ORDER BY id ASC
-                        LIMIT ?
-                    """, (session_id, limit))
-                elif pet_id:
-                    cursor.execute("""
-                        SELECT id, session_id, pet_id, sender, text, timestamp
-                        FROM mensagens_chat
-                        WHERE pet_id = ?
-                        ORDER BY id ASC
-                        LIMIT ?
-                    """, (pet_id, limit))
-                else:
-                    cursor.execute("""
-                        SELECT id, session_id, pet_id, sender, text, timestamp
-                        FROM mensagens_chat
-                        ORDER BY id DESC
-                        LIMIT ?
-                    """, (limit,))
-                
+                filtros = []
+                parametros: List[Any] = []
+
+                if session_id:
+                    filtros.append("session_id = ?")
+                    parametros.append(session_id)
+                if pet_id:
+                    filtros.append("pet_id = ?")
+                    parametros.append(pet_id)
+
+                where_sql = f"WHERE {' AND '.join(filtros)}" if filtros else ""
+                ordem_sql = "ORDER BY id ASC" if filtros else "ORDER BY id DESC"
+                parametros.append(limit)
+
+                cursor.execute(f"""
+                    SELECT id, session_id, pet_id, sender, text, timestamp
+                    FROM mensagens_chat
+                    {where_sql}
+                    {ordem_sql}
+                    LIMIT ?
+                """, tuple(parametros))
+
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
         except Exception as e:
@@ -130,23 +120,17 @@ class ChatRepository:
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
-                if pet_id:
-                    cursor.execute("""
-                        SELECT id, session_id, pet_id, nome_pet, pergunta, resposta,
-                               categoria, urgencia, origem_resposta, timestamp
-                        FROM auditoria_triagens
-                        WHERE pet_id = ?
-                        ORDER BY id DESC
-                        LIMIT ?
-                    """, (pet_id, limit))
-                else:
-                    cursor.execute("""
-                        SELECT id, session_id, pet_id, nome_pet, pergunta, resposta,
-                               categoria, urgencia, origem_resposta, timestamp
-                        FROM auditoria_triagens
-                        ORDER BY id DESC
-                        LIMIT ?
-                    """, (limit,))
+                where_sql = "WHERE pet_id = ?" if pet_id else ""
+                parametros = (pet_id, limit) if pet_id else (limit,)
+
+                cursor.execute(f"""
+                    SELECT id, session_id, pet_id, nome_pet, pergunta, resposta,
+                           categoria, urgencia, origem_resposta, timestamp
+                    FROM auditoria_triagens
+                    {where_sql}
+                    ORDER BY id DESC
+                    LIMIT ?
+                """, parametros)
 
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
@@ -166,37 +150,24 @@ class ChatRepository:
         try:
             with get_db_connection() as conn:
                 cursor = conn.cursor()
-                if pet_id:
-                    cursor.execute("""
-                        SELECT
-                            m.session_id,
-                            COUNT(*) AS total_mensagens,
-                            MAX(m.timestamp) AS last_activity,
-                            COALESCE(
-                                (SELECT text FROM mensagens_chat WHERE session_id = m.session_id AND sender = 'user' ORDER BY id ASC LIMIT 1),
-                                m.text
-                            ) AS titulo
-                        FROM mensagens_chat m
-                        WHERE m.pet_id = ?
-                        GROUP BY m.session_id
-                        ORDER BY MAX(m.id) DESC
-                        LIMIT ?
-                    """, (pet_id, limit))
-                else:
-                    cursor.execute("""
-                        SELECT
-                            m.session_id,
-                            COUNT(*) AS total_mensagens,
-                            MAX(m.timestamp) AS last_activity,
-                            COALESCE(
-                                (SELECT text FROM mensagens_chat WHERE session_id = m.session_id AND sender = 'user' ORDER BY id ASC LIMIT 1),
-                                m.text
-                            ) AS titulo
-                        FROM mensagens_chat m
-                        GROUP BY m.session_id
-                        ORDER BY MAX(m.id) DESC
-                        LIMIT ?
-                    """, (limit,))
+                where_sql = "WHERE m.pet_id = ?" if pet_id else ""
+                parametros = (pet_id, limit) if pet_id else (limit,)
+
+                cursor.execute(f"""
+                    SELECT
+                        m.session_id,
+                        COUNT(*) AS total_mensagens,
+                        MAX(m.timestamp) AS last_activity,
+                        COALESCE(
+                            (SELECT text FROM mensagens_chat WHERE session_id = m.session_id AND sender = 'user' ORDER BY id ASC LIMIT 1),
+                            m.text
+                        ) AS titulo
+                    FROM mensagens_chat m
+                    {where_sql}
+                    GROUP BY m.session_id
+                    ORDER BY MAX(m.id) DESC
+                    LIMIT ?
+                """, parametros)
 
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]

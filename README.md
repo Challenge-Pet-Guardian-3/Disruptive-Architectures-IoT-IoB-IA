@@ -343,6 +343,10 @@ deploy_guardianai_render/
     ├── utils/                # Utilitários de higienização, segurança e formatação
     │   ├── text.py           # Sanitização de Markdown para exibição fluida no React Native
     │   └── guardrails.py     # Detectores de evasão de escopo e bloqueio anti-código
+    ├── database/             # Conexão SQLite e DDL auto-inicializável (data/guardianai.db)
+    │   └── connection.py     # Gerenciador de conexão e tabelas (mensagens_chat, auditoria_triagens)
+    ├── repositories/         # Camada de persistência desacoplada (SRP)
+    │   └── chat_repository.py# Inserção e consulta de mensagens e pareceres de auditoria
     ├── services/             # Regras de negócio desacopladas (SRP & Inversão de Dependência)
     │   ├── knowledge_service.py # Consultas determinísticas e semânticas em memória
     │   ├── gemini_service.py    # Cliente Gemini (SDK oficial + fallback REST + janela deslizante)
@@ -350,7 +354,7 @@ deploy_guardianai_render/
     │   └── chat_service.py      # Orquestrador do pipeline de triagem de 6 estágios
     └── routers/              # Roteadores HTTP FastAPI (APIRouter)
         ├── health.py         # Endpoint GET / (Health check & pre-warm ping)
-        └── ai.py             # Endpoints POST /ai/chat e POST /ai/insights
+        └── ai.py             # Endpoints /ai/chat, /ai/insights, /ai/history e /ai/audit
 ```
 
 ---
@@ -359,12 +363,12 @@ deploy_guardianai_render/
 
 | Princípio | Aplicação Prática no Projeto |
 | :--- | :--- |
-| **S — Single Responsibility (SRP)** | Cada classe e módulo possui um único propósito bem delimitado: `api.py` apenas monta a aplicação (`create_app`), `ChatService` apenas coordena a triagem, `GeminiService` apenas lida com inferência generativa e `KnowledgeService` isola as buscas em memória. |
-| **O — Open/Closed (OCP)** | As bases de conhecimento em `src/knowledge/` podem receber novos alimentos tóxicos ou faixas etárias sem necessidade de modificar a lógica dos serviços de inferência ou os contratos dos roteadores. |
-| **L — Liskov Substitution (LSP)** | Os contratos de resposta (`ChatResponse`, `InsightsResponse`) mantêm consistência garantida de tipagem Pydantic em qualquer caminho de execução (seja via LLM, fallback semântico ou guardrail determinístico). |
-| **I — Interface Segregation (ISP)** | DTOs enxutos e focados: `PetContextPayload` contém apenas o contexto biológico do animal, desacoplado do contrato de histórico de mensagens (`MensagemHistorico`). |
-| **D — Dependency Inversion (DIP)** | Os roteadores em `src/routers/` dependem de abstrações de serviço estáticas/injetáveis (`ChatService`, `InsightsService`), e não de implementações acopladas a frameworks externos. |
-| **DRY (Don't Repeat Yourself)** | Funções utilitárias como `normalizar_texto` e `limpar_texto_mobile` centralizadas em `src/utils/`, eliminando redundâncias de sanitização. |
+| **S — Single Responsibility (SRP)** | Cada classe e módulo possui um único propósito bem delimitado: `api.py` apenas monta a aplicação (`create_app`), `ChatService` apenas coordena a triagem, `ChatRepository` isola o acesso a dados no SQLite, `GeminiService` apenas lida com inferência generativa e `KnowledgeService` isola as buscas em memória. |
+| **O — Open/Closed (OCP)** | As bases de conhecimento em `src/knowledge/` e o repositório em `src/repositories/` podem ser estendidos com novas consultas sem alterar os roteadores ou a lógica de inferência da LLM. |
+| **L — Liskov Substitution (LSP)** | Os contratos de resposta (`ChatResponse`, `InsightsResponse`, `HistoricoResponse`, `AuditoriaResponse`) mantêm consistência garantida de tipagem Pydantic em qualquer caminho de execução. |
+| **I — Interface Segregation (ISP)** | DTOs enxutos e focados: `PetContextPayload` contém apenas o contexto biológico do animal, desacoplado de `MensagemBancoItem` e `AuditoriaBancoItem`. |
+| **D — Dependency Inversion (DIP)** | Os roteadores em `src/routers/` dependem de abstrações de serviço e repositório estáticas/injetáveis, e não de conexões acopladas diretamente ao banco. |
+| **DRY (Don't Repeat Yourself)** | Funções utilitárias centralizadas em `src/utils/` e gerenciador de contexto `get_db_connection()` reutilizável em `src/database/`. |
 | **Zero Inline FQCN & Strict Typing** | Todas as importações são declaradas no topo de cada módulo (`top-level imports`), com tipagem estrita via `typing` e Pydantic (zero uso de `any`). |
 
 ---
@@ -374,8 +378,10 @@ deploy_guardianai_render/
 | Método | Rota | Descrição Técnica | Entrada / Payload | Retorno / Schema |
 | :---: | :--- | :--- | :--- | :--- |
 | `GET` | `/` | **Health Check & Pre-warm Ping:** Retorna status operacional, versão da engine e framework ativo. Utilizado para aquecer a instância no Render antes do início da sessão no app. | N/A | `{"status": "online", "service": "...", "version": "2.0.0"}` |
-| `POST` | `/ai/chat` | **Chat de Triagem & Orientação:** Processa dúvidas do tutor com histórico multi-turnos, janela deslizante (6 turnos), guardrails de segurança e fallbacks clínicos. | `ChatRequest` (pergunta, histórico, petContext) | `ChatResponse` (resposta sanitizada, categoria, urgência, ações recomendadas, XP sugerido) |
+| `POST` | `/ai/chat` | **Chat de Triagem & Orientação:** Processa dúvidas do tutor com histórico multi-turnos, janela deslizante (6 turnos), guardrails de segurança e persistência automática no SQLite. | `ChatRequest` (pergunta, histórico, petContext, sessionId) | `ChatResponse` (resposta sanitizada, categoria, urgência, ações recomendadas, XP, sessionId) |
 | `POST` | `/ai/insights` | **Geração de Insights Preventivos:** Analisa porte e idade do animal gerando a tríade de saúde preventiva (cuidados articulares, nutrição e protocolo veterinário). | `PetContextPayload` (porte, idade, espécie) | `InsightsResponse` (lista de 3 `InsightItem` com título, categoria e descrição) |
+| `GET` | `/ai/history` | **Histórico de Mensagens no SQLite:** Retorna as mensagens persistidas por `session_id` ou por `pet_id`. Utilizado pelo app Mobile no Modal de Histórico. | Query: `session_id`, `pet_id`, `limit` | `HistoricoResponse` (total e lista de `MensagemBancoItem` com remetente, texto e timestamp) |
+| `GET` | `/ai/audit` | **Auditoria de Triagens Clínicas:** Retorna os registros de atendimento e triagem médica salvos no SQLite com categoria, urgência, score XP e parecer. | Query: `pet_id`, `limit` | `AuditoriaResponse` (total e lista de `AuditoriaBancoItem`) |
 
 ---
 

@@ -1,5 +1,5 @@
 """
-Schemas Pydantic: Conversação e Chat da IA
+Schemas Pydantic: Conversação, Chat e Auditoria da IA
 """
 from typing import Optional, List
 from pydantic import BaseModel, Field
@@ -22,3 +22,33 @@ class ChatResponse(BaseModel):
     acoes_recomendadas: Optional[List[str]] = Field(default=None, description="Orientações e checklist de ações sugeridas para o tutor")
     score_xp_sugerido: Optional[int] = Field(default=10, description="Pontos de experiência (gamificação PetGuardian)")
     origem_resposta: str = Field(default="Guardian AI (PetGuardian Care)", description="Identificador do mecanismo responsável pela geração da resposta")
+    sessionId: Optional[str] = Field(default=None, description="Identificador da sessão ativa no banco de dados")
+
+class MensagemBancoItem(BaseModel):
+    id: int = Field(..., description="ID sequencial da mensagem")
+    session_id: str = Field(..., description="ID da sessão")
+    pet_id: Optional[int] = Field(default=None, description="ID do pet associado")
+    sender: str = Field(..., description="Remetente: 'user' ou 'model'")
+    text: str = Field(..., description="Conteúdo da mensagem")
+    timestamp: Optional[str] = Field(default=None, description="Data/hora do registro")
+
+class AuditoriaBancoItem(BaseModel):
+    id: int = Field(..., description="ID sequencial da auditoria")
+    session_id: str = Field(..., description="ID da sessão")
+    pet_id: Optional[int] = Field(default=None, description="ID do pet")
+    nome_pet: Optional[str] = Field(default=None, description="Nome do pet")
+    pergunta: str = Field(..., description="Pergunta do tutor")
+    resposta: str = Field(..., description="Resposta clínica fornecida")
+    categoria: str = Field(..., description="Categoria clínica")
+    urgencia: str = Field(..., description="Nível de urgência")
+    origem_resposta: str = Field(..., description="Origem da resposta")
+    score_xp_sugerido: int = Field(default=0, description="Score XP")
+    timestamp: Optional[str] = Field(default=None, description="Data/hora do registro")
+
+class HistoricoResponse(BaseModel):
+    total: int = Field(..., description="Total de mensagens retornadas")
+    mensagens: List[MensagemBancoItem] = Field(..., description="Lista de mensagens da sessão ou pet")
+
+class AuditoriaResponse(BaseModel):
+    total: int = Field(..., description="Total de registros de auditoria retornados")
+    auditorias: List[AuditoriaBancoItem] = Field(..., description="Lista de pareceres de triagem auditados")

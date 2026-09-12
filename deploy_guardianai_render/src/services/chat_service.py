@@ -1,11 +1,13 @@
 """
-Serviço Orquestrador do Chat Clínico PetGuardian
+Serviço Orquestrador do Chat Clínico PetGuardian com Persistência SQLite
 """
+import uuid
 from typing import Optional, List, Dict, Any
 from src.core.config import MODEL_NAME
 from src.schemas.chat import ChatRequest, ChatResponse
 from src.services.knowledge_service import KnowledgeService
 from src.services.gemini_service import GeminiService
+from src.repositories.chat_repository import ChatRepository
 from src.utils.text import limpar_texto_mobile, normalizar_texto
 from src.utils.guardrails import detectar_pedido_programacao, sanitizar_resposta_anti_codigo
 
@@ -18,10 +20,55 @@ class ChatService:
     4. Fallback semântico (FAQ cotidiana)
     5. Blindagem contra evasão de domínio (Prompt injection de código)
     6. Fallback clínico contextual por porte e idade
+    7. Persistência de mensagens e auditoria no SQLite (Fail-safe)
     """
 
     @classmethod
+    def _finalizar_e_persistir(
+        cls,
+        response: ChatResponse,
+        request: ChatRequest,
+        session_id: str,
+        pet_id: Optional[int],
+        nome_pet: Optional[str]
+    ) -> ChatResponse:
+        """
+        Atribui o sessionId ao response e grava o histórico e o parecer de auditoria no SQLite.
+        """
+        response.sessionId = session_id
+
+        # Persistência assíncrona/segura no SQLite
+        ChatRepository.salvar_mensagem(
+            session_id=session_id,
+            sender="user",
+            text=request.pergunta,
+            pet_id=pet_id
+        )
+        ChatRepository.salvar_mensagem(
+            session_id=session_id,
+            sender="model",
+            text=response.resposta,
+            pet_id=pet_id
+        )
+        ChatRepository.salvar_auditoria(
+            session_id=session_id,
+            pergunta=request.pergunta,
+            resposta=response.resposta,
+            categoria=response.categoria,
+            urgencia=response.urgencia,
+            origem_resposta=response.origem_resposta,
+            pet_id=pet_id,
+            nome_pet=nome_pet,
+            score_xp_sugerido=response.score_xp_sugerido or 0
+        )
+
+        return response
+
+    @classmethod
     def processar_chat(cls, request: ChatRequest) -> ChatResponse:
+        session_id = request.sessionId or f"sess_{uuid.uuid4().hex[:12]}"
+        pet_id = request.petContext.id if request.petContext else None
+        nome_pet = request.petContext.nome if request.petContext and request.petContext.nome else "seu pet"
         pergunta_norm = normalizar_texto(request.pergunta)
 
         # 1. Guardrail de Segurança Farmacológica / Paracetamol em Gatos (apenas pergunta atual)
@@ -33,7 +80,7 @@ class ChatService:
                 "• Não administre nenhum medicamento caseiro ou humano.\n"
                 "• Se o animal ingeriu acidentalmente, leve IMEDIATAMENTE a um pronto-socorro veterinário 24h."
             )
-            return ChatResponse(
+            resp = ChatResponse(
                 resposta=texto_limpo,
                 categoria="EMERGENCIA",
                 urgencia="EMERGENCIA",
@@ -41,6 +88,7 @@ class ChatService:
                 score_xp_sugerido=0,
                 origem_resposta="Guardrail de Segurança Farmacológica PetGuardian"
             )
+            return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
 
         # 2. Verificação de Alimentos Tóxicos Críticos
         dados_tox = KnowledgeService.verificar_alimento_toxico(request.pergunta)
@@ -54,7 +102,7 @@ class ChatService:
                 f"• Sintomas de alerta: {dados_tox['sintomas']}\n\n"
                 f"👉 Conduta recomendada: {dados_tox['conduta_imediata']}"
             )
-            return ChatResponse(
+            resp = ChatResponse(
                 resposta=limpar_texto_mobile(texto_alerta),
                 categoria="EMERGENCIA" if urgencia_val == "EMERGENCIA" else "SAUDE",
                 urgencia=urgencia_val,
@@ -62,13 +110,12 @@ class ChatService:
                 score_xp_sugerido=15,
                 origem_resposta="Base de Toxicologia Determinística PetGuardian"
             )
+            return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
 
-        # 3. Tentativa de Inferência via Gemini com Memória Multi-turnos
+        # 3. Tentativa de Inferência via Gemini com Memória Multi-turnos e Janela Deslizante
         contexto_pet_str = ""
-        nome_pet = "seu pet"
         if request.petContext and request.petContext.nome:
             p = request.petContext
-            nome_pet = p.nome
             contexto_pet_str = (
                 f"[Dados do Pet: Nome={p.nome}, Raça={p.raca or 'SRD'}, "
                 f"Porte={p.porte or 'médio'}, Idade={p.idade or 'não informada'} anos, "
@@ -82,7 +129,7 @@ class ChatService:
         if resposta_ia:
             texto_sem_codigo = sanitizar_resposta_anti_codigo(resposta_ia, eh_pedido_programacao)
             texto_limpo = limpar_texto_mobile(texto_sem_codigo)
-            return ChatResponse(
+            resp = ChatResponse(
                 resposta=texto_limpo,
                 categoria="saude",
                 urgencia="baixa",
@@ -90,6 +137,7 @@ class ChatService:
                 score_xp_sugerido=10,
                 origem_resposta=f"Guardian AI ({MODEL_NAME})"
             )
+            return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
 
         # 4. Fallback Semântico Inteligente para Perguntas Cotidianas
         dados_tema = KnowledgeService.consultar_faq_cotidiana(request.pergunta)
@@ -97,7 +145,7 @@ class ChatService:
             texto_base = dados_tema["resposta"]
             if eh_pedido_programacao:
                 texto_base = sanitizar_resposta_anti_codigo(texto_base, True)
-            return ChatResponse(
+            resp = ChatResponse(
                 resposta=limpar_texto_mobile(texto_base),
                 categoria=dados_tema["categoria"],
                 urgencia=dados_tema["urgencia"],
@@ -105,10 +153,11 @@ class ChatService:
                 score_xp_sugerido=10,
                 origem_resposta="Guardian AI (Base Semântica Especializada)"
             )
+            return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
 
-        # Se for puramente pergunta de programação fora de escopo sem tema pet correspondente
+        # 5. Se for puramente pergunta de programação fora de escopo sem tema pet correspondente
         if eh_pedido_programacao:
-            return ChatResponse(
+            resp = ChatResponse(
                 resposta=limpar_texto_mobile(
                     "Como Guardian AI, sou dedicada exclusivamente à saúde, nutrição e bem-estar de cães e gatos. "
                     "Por isso, não forneço códigos, programação em Python ou instruções de desenvolvimento de software, "
@@ -121,8 +170,9 @@ class ChatService:
                 score_xp_sugerido=5,
                 origem_resposta="Guardrail Anti-Pretexto e Blindagem de Domínio"
             )
+            return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)
 
-        # 5. Fallback Contextual por Porte e Idade
+        # 6. Fallback Contextual por Porte e Idade
         porte_req = request.petContext.porte if request.petContext and request.petContext.porte else "medio"
         idade_num = request.petContext.idade if request.petContext and request.petContext.idade is not None else 3
         faixa_calc = "senior" if idade_num >= 7 else ("filhote" if idade_num <= 1 else "adulto")
@@ -137,7 +187,7 @@ class ChatService:
             f"Para diagnósticos específicos, alterações de comportamento ou sintomas agudos, consulte sempre um médico-veterinário presencial."
         )
 
-        return ChatResponse(
+        resp = ChatResponse(
             resposta=limpar_texto_mobile(resposta_contextual),
             categoria="saude",
             urgencia="baixa",
@@ -145,3 +195,4 @@ class ChatService:
             score_xp_sugerido=10,
             origem_resposta="Guardian AI (Mecanismo Preventivo)"
         )
+        return cls._finalizar_e_persistir(resp, request, session_id, pet_id, nome_pet)

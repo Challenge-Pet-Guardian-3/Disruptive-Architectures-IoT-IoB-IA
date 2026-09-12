@@ -25,11 +25,15 @@ from src.core.config import (
 )
 from src.routers.health import health_router
 from src.routers.ai import ai_router
+from src.database.connection import init_db
 
 def create_app() -> FastAPI:
     """
     Constrói e configura a instância do FastAPI com middlewares e roteadores modulares.
     """
+    # Inicializa o banco de dados SQLite e cria as tabelas de forma idempotente
+    init_db()
+
     aplicacao = FastAPI(
         title=APP_TITLE,
         description=APP_DESCRIPTION,

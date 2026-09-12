@@ -21,3 +21,9 @@ ENV/
 *.swp
 .DS_Store
 Thumbs.db
+
+# SQLite Databases & Local Data
+*.db
+*.sqlite
+*.sqlite3
+data/

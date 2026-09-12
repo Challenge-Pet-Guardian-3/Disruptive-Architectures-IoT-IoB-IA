@@ -188,7 +188,7 @@ O diagrama a seguir ilustra a integração completa entre a interface do usuári
                            │                           │ BACKEND FASTAPI EM NUVEM (DEPLOY NO RENDER)      │
                            │                           │    deploy_guardianai_render/api.py (App Factory) │
                            │                           │    • Arquitetura Modular em Camadas (src/)       │
-                           │                           │    • 100% Stateless & Zero I/O de Banco          │
+                           │                           │    • Persistência Local SQLite (Sessões/Chat)    │
                            │                           │    • Janela Deslizante (Anti-Contaminação)       │
                            │                           │    • CORS Middleware & Pre-warm Ping (GET /)     │
                            │                           └────────────────────────┬─────────────────────────┘
@@ -231,8 +231,8 @@ O diagrama a seguir ilustra a integração completa entre a interface do usuári
  └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-> **Nota de Arquitetura (Stateless & Desacoplamento de Dados):**  
-> O microsserviço Python em produção ([`deploy_guardianai_render`](./deploy_guardianai_render)) e o notebook autônomo operam sob o padrão **100% Stateless**, sem nenhuma dependência ou conexão direta com banco de dados em tempo de execução. As bases de toxicologia e triagem clínica residem em memória (`src/knowledge/`), permitindo tempo de resposta em microssegundos com zero risco de corrupção ou perda de estado em discos efêmeros de nuvem (Render Free). Toda a persistência de perfil do pet pertence ao aplicativo Mobile e ao banco relacional corporativo (Oracle Database), que enviam apenas o payload contextual (`PetContext`) via JSON para a IA realizar o raciocínio clínico e devolver a resposta sanitizada com o schema Pydantic.
+> **Nota de Arquitetura (Bases In-Memory & Persistência Local SQLite):**  
+> O microsserviço Python em produção ([`deploy_guardianai_render`](./deploy_guardianai_render)) e o notebook autônomo operam com suas bases de toxicologia e triagem clínica em memória (`src/knowledge/`), permitindo tempo de resposta em microssegundos com zero latência de disco. As conversas, sessões e pareceres de triagem são persistidos em banco local SQLite (`data/guardianai.db`), possibilitando navegação no histórico em padrão LLM com recuperação contextual de conversas anteriores. Toda a persistência de perfil cadastral do animal pertence ao aplicativo Mobile e ao banco relacional corporativo (Oracle Database), que enviam apenas o payload contextual (`PetContext`) via JSON para a IA realizar o raciocínio clínico e devolver a resposta sanitizada com o schema Pydantic.
 
 ---
 
@@ -354,7 +354,7 @@ deploy_guardianai_render/
     │   └── chat_service.py      # Orquestrador do pipeline de triagem de 6 estágios
     └── routers/              # Roteadores HTTP FastAPI (APIRouter)
         ├── health.py         # Endpoint GET / (Health check & pre-warm ping)
-        └── ai.py             # Endpoints /ai/chat, /ai/insights, /ai/history e /ai/audit
+        └── ai.py             # Endpoints /ai/chat, /ai/insights, /ai/sessions, /ai/history e /ai/audit
 ```
 
 ---
@@ -378,10 +378,12 @@ deploy_guardianai_render/
 | Método | Rota | Descrição Técnica | Entrada / Payload | Retorno / Schema |
 | :---: | :--- | :--- | :--- | :--- |
 | `GET` | `/` | **Health Check & Pre-warm Ping:** Retorna status operacional, versão da engine e framework ativo. Utilizado para aquecer a instância no Render antes do início da sessão no app. | N/A | `{"status": "online", "service": "...", "version": "2.0.0"}` |
-| `POST` | `/ai/chat` | **Chat de Triagem & Orientação:** Processa dúvidas do tutor com histórico multi-turnos, janela deslizante (6 turnos), guardrails de segurança e persistência automática no SQLite. | `ChatRequest` (pergunta, histórico, petContext, sessionId) | `ChatResponse` (resposta sanitizada, categoria, urgência, ações recomendadas, XP, sessionId) |
+| `POST` | `/ai/chat` | **Chat de Triagem & Orientação:** Processa dúvidas do tutor com histórico multi-turnos, janela deslizante (6 turnos), guardrails de segurança e persistência automática no SQLite. | `ChatRequest` (pergunta, histórico, petContext, sessionId) | `ChatResponse` (resposta sanitizada, categoria, urgência, ações recomendadas, origem_resposta, sessionId) |
 | `POST` | `/ai/insights` | **Geração de Insights Preventivos:** Analisa porte e idade do animal gerando a tríade de saúde preventiva (cuidados articulares, nutrição e protocolo veterinário). | `PetContextPayload` (porte, idade, espécie) | `InsightsResponse` (lista de 3 `InsightItem` com título, categoria e descrição) |
-| `GET` | `/ai/history` | **Histórico de Mensagens no SQLite:** Retorna as mensagens persistidas por `session_id` ou por `pet_id`. Utilizado pelo app Mobile no Modal de Histórico. | Query: `session_id`, `pet_id`, `limit` | `HistoricoResponse` (total e lista de `MensagemBancoItem` com remetente, texto e timestamp) |
-| `GET` | `/ai/audit` | **Auditoria de Triagens Clínicas:** Retorna os registros de atendimento e triagem médica salvos no SQLite com categoria, urgência, score XP e parecer. | Query: `pet_id`, `limit` | `AuditoriaResponse` (total e lista de `AuditoriaBancoItem`) |
+| `GET` | `/ai/sessions` | **Listagem de Sessões de Conversa:** Lista as conversas anteriores do pet agrupadas por sessão (estilo ChatGPT/Claude), com título da primeira pergunta, total de mensagens e última atividade. | Query: `pet_id`, `limit` | `SessoesResponse` (total e lista de `SessaoItem`) |
+| `GET` | `/ai/history` | **Histórico de Mensagens no SQLite:** Retorna as mensagens persistidas por `session_id` ou por `pet_id`. Utilizado pelo app Mobile ao carregar uma conversa do histórico. | Query: `session_id`, `pet_id`, `limit` | `HistoricoResponse` (total e lista de `MensagemBancoItem` com remetente, texto e timestamp) |
+| `DELETE` | `/ai/sessions/{session_id}` | **Exclusão de Sessão de Chat:** Remove permanentemente uma sessão de conversa e todas as mensagens vinculadas do banco SQLite. | Path: `session_id` | `{"status": "ok", "session_id": "..."}` |
+| `GET` | `/ai/audit` | **Auditoria de Triagens Clínicas:** Retorna os registros de atendimento e triagem médica salvos no SQLite com categoria, urgência, origem e parecer clínico. | Query: `pet_id`, `limit` | `AuditoriaResponse` (total e lista de `AuditoriaBancoItem`) |
 
 ---
 

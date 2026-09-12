@@ -153,3 +153,69 @@ class ChatRepository:
         except Exception as e:
             logger.error(f"Erro ao listar auditorias no SQLite: {e}")
             return []
+
+    @staticmethod
+    def listar_sessoes(
+        pet_id: Optional[int] = None,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        Recupera as sessões de conversa do pet agrupadas, com título baseado na primeira
+        pergunta do tutor, quantidade de mensagens e data da última interação.
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                if pet_id:
+                    cursor.execute("""
+                        SELECT
+                            m.session_id,
+                            COUNT(*) AS total_mensagens,
+                            MAX(m.timestamp) AS last_activity,
+                            COALESCE(
+                                (SELECT text FROM mensagens_chat WHERE session_id = m.session_id AND sender = 'user' ORDER BY id ASC LIMIT 1),
+                                m.text
+                            ) AS titulo
+                        FROM mensagens_chat m
+                        WHERE m.pet_id = ?
+                        GROUP BY m.session_id
+                        ORDER BY MAX(m.id) DESC
+                        LIMIT ?
+                    """, (pet_id, limit))
+                else:
+                    cursor.execute("""
+                        SELECT
+                            m.session_id,
+                            COUNT(*) AS total_mensagens,
+                            MAX(m.timestamp) AS last_activity,
+                            COALESCE(
+                                (SELECT text FROM mensagens_chat WHERE session_id = m.session_id AND sender = 'user' ORDER BY id ASC LIMIT 1),
+                                m.text
+                            ) AS titulo
+                        FROM mensagens_chat m
+                        GROUP BY m.session_id
+                        ORDER BY MAX(m.id) DESC
+                        LIMIT ?
+                    """, (limit,))
+
+                rows = cursor.fetchall()
+                return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Erro ao listar sessões de chat no SQLite: {e}")
+            return []
+
+    @staticmethod
+    def excluir_sessao(session_id: str) -> bool:
+        """
+        Exclui todas as mensagens e registros de auditoria vinculados a uma sessão.
+        """
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM mensagens_chat WHERE session_id = ?", (session_id,))
+                cursor.execute("DELETE FROM auditoria_triagens WHERE session_id = ?", (session_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao excluir sessão {session_id} no SQLite: {e}")
+            return False

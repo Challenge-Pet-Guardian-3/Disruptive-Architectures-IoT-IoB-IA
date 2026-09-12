@@ -50,3 +50,13 @@ class HistoricoResponse(BaseModel):
 class AuditoriaResponse(BaseModel):
     total: int = Field(..., description="Total de registros de auditoria retornados")
     auditorias: List[AuditoriaBancoItem] = Field(..., description="Lista de pareceres de triagem auditados")
+
+class SessaoItem(BaseModel):
+    session_id: str = Field(..., description="Identificador único da sessão de chat")
+    titulo: str = Field(..., description="Título resumido da conversa (primeira pergunta do tutor)")
+    total_mensagens: int = Field(default=0, description="Total de mensagens trocadas na conversa")
+    last_activity: Optional[str] = Field(default=None, description="Data e hora da última interação")
+
+class SessoesResponse(BaseModel):
+    total: int = Field(..., description="Total de sessões encontradas")
+    sessoes: List[SessaoItem] = Field(..., description="Lista de sessões de conversas anteriores")
